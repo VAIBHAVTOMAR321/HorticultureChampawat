@@ -22,7 +22,7 @@ import Select from "react-select";
 
 // API URL
 const BILLING_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 
 // Available columns for the table (excluding sno which is always shown)
 const billingTableColumns = [

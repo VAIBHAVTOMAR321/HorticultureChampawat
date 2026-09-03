@@ -49,7 +49,7 @@ const DemandGenerate = () => {
     setError('');
     try {
       const res = await fetch(
-        'https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/'
+        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/'
       );
       if (!res.ok) throw new Error();
 
@@ -67,7 +67,7 @@ const DemandGenerate = () => {
     setCenterLoading(true);
     try {
       const res = await fetch(
-        'https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/'
+        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/'
       );
       if (!res.ok) throw new Error();
 
@@ -124,7 +124,7 @@ const DemandGenerate = () => {
     };
 
     try {
-      const url = 'https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/';
+      const url = 'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/';
       
       const res = await fetch(url, {
         method: 'POST',
@@ -174,7 +174,7 @@ const DemandGenerate = () => {
     };
 
     try {
-      const url = 'https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/';
+      const url = 'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/';
       
       const res = await fetch(url, {
         method: 'PUT',

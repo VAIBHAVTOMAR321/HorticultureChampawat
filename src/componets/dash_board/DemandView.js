@@ -69,7 +69,7 @@ const DemandView = () => {
 
     try {
       const response = await fetch(
-        'https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/'
+        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/'
       );
 
       if (!response.ok) {
@@ -116,7 +116,7 @@ const DemandView = () => {
     setError('');
     
     try {
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/');
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/');
       
       if (!response.ok) {
         throw new Error('Failed to fetch demands');
@@ -154,7 +154,7 @@ const DemandView = () => {
         unit: formData.unit
       };
       
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/', {
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -215,7 +215,7 @@ const DemandView = () => {
       };
       
       // Update URL to include the demand ID in the path
-      const response = await fetch(`https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/`, {
+      const response = await fetch(`https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -262,7 +262,7 @@ const DemandView = () => {
 
     try {
       const response = await fetch(
-        `https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/`,
+        `https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/`,
         {
           method: 'DELETE',
           headers: {
@@ -342,7 +342,7 @@ const DemandView = () => {
 
     try {
       const response = await fetch(
-        'https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/',
+        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/',
         {
           method: 'PUT',
           headers: {
@@ -396,7 +396,7 @@ const DemandView = () => {
 
     try {
       const response = await fetch(
-        'https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/',
+        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/',
         {
           method: 'DELETE',
           headers: {

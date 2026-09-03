@@ -21,7 +21,7 @@ import { convertToDisplayFormat } from "../utils/dateUtils";
 
 // API URL
 const BENEFICIARIES_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/beneficiaries-registration/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/beneficiaries-registration/";
 
 // Available columns for table (excluding sno which is always shown)
 const beneficiariesTableColumns = [

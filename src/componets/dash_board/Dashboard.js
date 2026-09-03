@@ -1063,7 +1063,7 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/");
+        const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/");
         
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);

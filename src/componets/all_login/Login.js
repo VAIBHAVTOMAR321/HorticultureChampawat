@@ -103,7 +103,7 @@ export default function Login() {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.identifier);
     
     try {
-      const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/login/", {
+      const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -196,7 +196,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/login/", {
+      const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -261,7 +261,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/login/", {
+      const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
