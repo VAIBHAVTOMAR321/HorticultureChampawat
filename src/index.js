@@ -10,10 +10,12 @@ const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
   <React.StrictMode>
-    <BrowserRouter basename="/champawathorticulture">
+    <BrowserRouter basename={process.env.PUBLIC_URL}>
       <App />
     </BrowserRouter>
   </React.StrictMode>
 );
 
-reportWebVitals();
+if (process.env.NODE_ENV === 'production') {
+  reportWebVitals();
+}

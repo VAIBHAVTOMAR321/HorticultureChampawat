@@ -53,10 +53,10 @@ const roundTo2Decimals = (value) => {
 };
 
 const validKendraNames = [
-  "बस्तिया (Bastiya)",
-  "लोहाघाट (Lohaghat)",
-  "बाराकोट (Barakot)",
-  "खेतीखान (Khetikhan)",
+  "बस्तिया",
+  "लोहाघाट",
+  "बाराकोट",
+  "खेतीखान",
 ];
 
 // Static options for form fields
@@ -70,20 +70,20 @@ const unitOptions = ["बैग", "क्विंटल", "किलोग्�
 const sourceOptions = ["PWD", "PMGSY", "NREGA"];
 const schemeOptions = ["MGNREGA", "PMKSY", "DDUGJY"];
 const vikasKhandOptions = [
-  "चम्पावत (Champawat)",
-  "सूखीढांग (Sukhidhang)",
-  "मंच (Manch)",
-  "लोहाघाट (Lohaghat)",
-  "किमतोली (Kimtoli)",
-  "रौसाल (Rausal)",
-  "बाराकोट (Barakot)",
-  "पाटी (Pati)",
-  "भिंगराड़ा (Bhingrada)",
-  "देवीधुरा (Devidhura)",
+  "चम्पावत",
+  "सूखीढांग",
+  "मंच",
+  "लोहाघाट",
+  "किमतोली",
+  "रौसाल",
+  "बाराकोट",
+  "पाटी",
+  "भिंगराड़ा",
+  "देवीधुरा",
 ];
 const vidhanSabhaOptions = [
-  "चम्पावत (Champawat)",
-  "लोहाघाट (Lohaghat)",
+  "चम्पावत",
+  "लोहाघाट",
 ];
 
 // Available columns for the table (excluding sno which is always shown)
@@ -436,20 +436,20 @@ const Registration = () => {
       } else {
         // Fallback to hardcoded options if API returns empty or invalid data
         setCenterOptions([
-          "बस्तिया (Bastiya)",
-          "लोहाघाट (Lohaghat)",
-          "बाराकोट (Barakot)",
-          "खेतीखान (Khetikhan)",
+          "बस्तिया",
+          "लोहाघाट",
+          "बाराकोट",
+          "खेतीखान",
         ]);
       }
     } catch (error) {
       console.error("Error fetching center options:", error);
       // Fallback to hardcoded options if API fails
       setCenterOptions([
-        "बस्तिया (Bastiya)",
-        "लोहाघाट (Lohaghat)",
-        "बाराकोट (Barakot)",
-        "खेतीखान (Khetikhan)",
+        "बस्तिया",
+        "लोहाघाट",
+        "बाराकोट",
+        "खेतीखान",
       ]);
     }
   };

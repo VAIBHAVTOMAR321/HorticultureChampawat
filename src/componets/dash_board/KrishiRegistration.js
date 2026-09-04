@@ -46,18 +46,18 @@ const roundTo2Decimals = (value) => {
 };
 
 const validKendraNames = [
-  "बस्तिया (Bastiya)",
-  "लोहाघाट (Lohaghat)",
-  "बाराकोट (Barakot)",
-  "खेतीखान (Khetikhan)",
+  "बस्तिया",
+  "लोहाघाट",
+  "बाराकोट",
+  "खेतीखान",
 ];
 
 // Updated center options with exact names from your list
 const centerOptions = [
-  "बस्तिया (Bastiya)",
-  "लोहाघाट (Lohaghat)",
-  "बाराकोट (Barakot)",
-  "खेतीखान (Khetikhan)",
+  "बस्तिया",
+  "लोहाघाट",
+  "बाराकोट",
+  "खेतीखान",
 ];
 
 // Static options for form fields
@@ -1748,7 +1748,7 @@ const KrishiRegistration = () => {
       const today = getTodayInDisplayFormat();
       const sampleData = [
         {
-          "केंद्र का नाम": "बस्तिया (Bastiya)",
+          "केंद्र का नाम": "बस्तिया",
           "योजना का नाम": "MGNREGA",
           "आपूर्ति की गई वस्तु का नाम": "बीज",
           "किसान का नाम": "रामेश कुमार",

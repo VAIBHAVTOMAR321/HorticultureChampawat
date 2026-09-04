@@ -13,10 +13,10 @@ export default function Login() {
 
   // Kenra names for demand generate login
   const kenraNames = [
-    "बस्तिया (Bastiya)",
-    "लोहाघाट (Lohaghat)",
-    "बाराकोट (Barakot)",
-    "खेतीखान (Khetikhan)",
+    "बस्तिया",
+    "लोहाघाट",
+    "बाराकोट",
+    "खेतीखान",
   ];
 
   // Login type state
