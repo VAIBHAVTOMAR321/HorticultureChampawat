@@ -54,9 +54,17 @@ const roundTo2Decimals = (value) => {
 
 const validKendraNames = [
   "बस्तिया",
+  "सूखीढांग",
+  "चम्पावत",
+  "मंच",
   "लोहाघाट",
+  "किमतोली",
+  "रौसाल",
   "बाराकोट",
+  "चैमेल",
   "खेतीखान",
+  "भिगराड़ा",
+  "देवीधुरा",
 ];
 
 // Static options for form fields
@@ -70,16 +78,11 @@ const unitOptions = ["बैग", "क्विंटल", "किलोग्�
 const sourceOptions = ["PWD", "PMGSY", "NREGA"];
 const schemeOptions = ["MGNREGA", "PMKSY", "DDUGJY"];
 const vikasKhandOptions = [
-  "चम्पावत",
-  "सूखीढांग",
-  "मंच",
-  "लोहाघाट",
-  "किमतोली",
-  "रौसाल",
-  "बाराकोट",
-  "पाटी",
-  "भिंगराड़ा",
-  "देवीधुरा",
+ "चम्पावत",
+ "लोहाघाट",
+ "बाराकोट",
+ "पाटी",
+  
 ];
 const vidhanSabhaOptions = [
   "चम्पावत",
@@ -323,7 +326,7 @@ const Registration = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [vikasKhandData, setVikasKhandData] = useState(null);
   const [isFetchingVikasKhand, setIsFetchingVikasKhand] = useState(false);
-  const [centerOptions, setCenterOptions] = useState([]);
+  const [centerOptions, setCenterOptions] = useState(validKendraNames);
 
   // State for filters
   const [filters, setFilters] = useState({
@@ -432,25 +435,16 @@ const Registration = () => {
       const response = await axios.get(CENTERS_API_URL);
       const centers = response.data || [];
       if (Array.isArray(centers) && centers.length > 0) {
-        setCenterOptions(centers);
+        const merged = Array.from(
+          new Set([...validKendraNames, ...centers]),
+        );
+        setCenterOptions(merged);
       } else {
-        // Fallback to hardcoded options if API returns empty or invalid data
-        setCenterOptions([
-          "बस्तिया",
-          "लोहाघाट",
-          "बाराकोट",
-          "खेतीखान",
-        ]);
+        setCenterOptions(validKendraNames);
       }
     } catch (error) {
       console.error("Error fetching center options:", error);
-      // Fallback to hardcoded options if API fails
-      setCenterOptions([
-        "बस्तिया",
-        "लोहाघाट",
-        "बाराकोट",
-        "खेतीखान",
-      ]);
+      setCenterOptions(validKendraNames);
     }
   };
 
