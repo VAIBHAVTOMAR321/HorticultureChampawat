@@ -46,18 +46,34 @@ const roundTo2Decimals = (value) => {
 };
 
 const validKendraNames = [
-  "बस्तिया",
+ "बस्तिया",
+  "सूखीढांग",
+  "चम्पावत",
+  "मंच",
   "लोहाघाट",
+  "किमतोली",
+  "रौसाल",
   "बाराकोट",
+  "चैमेल",
   "खेतीखान",
+  "भिगराड़ा",
+  "देवीधुरा",
 ];
 
 // Updated center options with exact names from your list
 const centerOptions = [
-  "बस्तिया",
+ "बस्तिया",
+  "सूखीढांग",
+  "चम्पावत",
+  "मंच",
   "लोहाघाट",
+  "किमतोली",
+  "रौसाल",
   "बाराकोट",
+  "चैमेल",
   "खेतीखान",
+  "भिगराड़ा",
+  "देवीधुरा",
 ];
 
 // Static options for form fields
