@@ -6,7 +6,7 @@ import Footer from '../footer/Footer';
 import { FaClipboardList, FaPlus, FaEdit, FaTrashAlt, FaSave, FaTimes, FaCalendarAlt, FaEye, FaPrint } from 'react-icons/fa';
 import '../../assets/css/dashboard.css';
 
-const API_BASE_URL = 'https://mahadevaaya.com/govbillingsystem/backend/api/salary-attendance-reports/';
+const API_BASE_URL = 'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/salary-attendance-reports/';
 
 // 12 Months List (January to December)
 const MONTH_OPTIONS = [

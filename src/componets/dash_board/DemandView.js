@@ -70,7 +70,7 @@ const DemandView = () => {
     setCenterError('');
 
     try {
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/');
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/');
 
       if (!response.ok) {
         throw new Error('Failed to fetch center demands');
@@ -124,7 +124,7 @@ const DemandView = () => {
     setError('');
     
     try {
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/');
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/');
       if (!response.ok) {
         throw new Error('Failed to fetch demands');
       }
@@ -157,7 +157,7 @@ const DemandView = () => {
         rate: parseFloat(formData.rate),
         unit: formData.unit
       };
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/', {
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -199,7 +199,7 @@ const DemandView = () => {
         rate: parseFloat(formData.rate),
         unit: formData.unit 
       };
-      const response = await fetch(`https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/`, {
+      const response = await fetch(`https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -229,7 +229,7 @@ const DemandView = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await fetch(`https://mahadevaaya.com/govbillingsystem/backend/api/demand-generation/`, {
+      const response = await fetch(`https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-generation/`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ demand_id: currentDemand.demand_id }),
@@ -288,7 +288,7 @@ const DemandView = () => {
     setEditValidationError('');
     const payload = { id: recordId, demanded_quantity: parseFloat(editingQuantity) };
     try {
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/', {
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -328,7 +328,7 @@ const DemandView = () => {
     setError('');
     setSuccess('');
     try {
-      const response = await fetch('https://mahadevaaya.com/govbillingsystem/backend/api/demand-by-center/', {
+      const response = await fetch('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/demand-by-center/', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: centerDemandToDelete.id }),

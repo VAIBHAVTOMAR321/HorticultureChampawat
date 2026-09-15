@@ -38,7 +38,7 @@ import Chart from "chart.js/auto";
 import { HierarchicalTable, HierarchicalTableRows } from "../HierarchicalTable";
 
 const API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 
 // Hindi translations for form
 const translations = {

@@ -8,10 +8,10 @@ import {
 import { useAuth } from "../context/AuthContext";
 import "./GetViewLibrary.css";
 
-const LIBRARY_API_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/library";
+const LIBRARY_API_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/library";
 const LIBRARY_CATEGORIES_API_URL = `${LIBRARY_API_URL}/categories`;
-const CENTER_LINKS_API_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/center-links";
-const DETAILS_API_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/center-link-details-bycenter";
+const CENTER_LINKS_API_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-links";
+const DETAILS_API_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-link-details-bycenter";
 const MEDIA_BASE_URL = "https://mahadevaaya.com/govbillingsystem/backend";
 
 const getToken = () => localStorage.getItem("access_token") || localStorage.getItem("token");

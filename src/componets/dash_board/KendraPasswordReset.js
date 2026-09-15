@@ -22,7 +22,7 @@ const KendraPasswordReset = () => {
   useEffect(() => {
     const fetchKendraList = async () => {
       try {
-        const response = await axios.get('https://mahadevaaya.com/govbillingsystem/backend/api/reguser-list/');
+        const response = await axios.get('https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/reguser-list/');
         setKendraList(response.data);
         setFetching(false);
       } catch (error) {
@@ -99,7 +99,7 @@ const KendraPasswordReset = () => {
 
     try {
       const response = await axios.put(
-        'https://mahadevaaya.com/govbillingsystem/backend/api/center-password-change/',
+        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-password-change/',
         { user_id: selectedKendraId, password: newPassword }
       );
 

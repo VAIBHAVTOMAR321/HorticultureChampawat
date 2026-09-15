@@ -11,8 +11,8 @@ import DashBoardHeader from "./DashBoardHeader";
 import LeftNav from "./LeftNav";
 
 // API URLs
-const YEARLY_DATA_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
-const MONTHLY_DATA_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/report-billing-items/";
+const YEARLY_DATA_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
+const MONTHLY_DATA_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/report-billing-items/";
 
 // Helper function to format numbers as currency
 const formatCurrency = (amount) => {

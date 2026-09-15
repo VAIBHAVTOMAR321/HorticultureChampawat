@@ -28,12 +28,12 @@ import {
 
 import "./LibrarySystem.css";
 
-const API_BASE_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/library";
+const API_BASE_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/library";
 const MEDIA_BASE_URL = "https://mahadevaaya.com/govbillingsystem/backend";
 
 // Kendra / center-links APIs
-const CENTER_LINKS_API_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/center-links";
-const CENTERS_API_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/centres";
+const CENTER_LINKS_API_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-links";
+const CENTERS_API_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/centres";
 const CENTER_LIBRARY_SHARE_URL = "https://dhokotdwar.in/LibrarySystem";
 
 const LibrarySystem = () => {

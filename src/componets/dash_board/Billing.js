@@ -23,9 +23,9 @@ import Footer from "../footer/Footer";
 
 // API URLs
 const GET_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 const UPDATE_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/update-billing-item/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/update-billing-item/";
 
 // Custom styles for react-select
 const customSelectStyles = {

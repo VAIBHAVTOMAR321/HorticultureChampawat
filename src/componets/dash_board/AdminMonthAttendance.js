@@ -8,7 +8,7 @@ import Footer from '../footer/Footer';
 import '../../assets/css/dashboard.css';
 
 const API_URL =
-  'https://mahadevaaya.com/govbillingsystem/backend/api/month-attendance-reports/';
+  'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/month-attendance-reports/';
 
 const BACKEND_BASE =
   'https://mahadevaaya.com/govbillingsystem/backend';

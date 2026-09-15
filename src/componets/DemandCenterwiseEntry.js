@@ -9,7 +9,7 @@ import { FaCalendarAlt, FaFilter, FaTable } from "react-icons/fa";
 import "./DemandCenterwiseEntry.css";
 
 const BILLING_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 
 const customSelectStyles = {
   control: (provided, state) => ({
