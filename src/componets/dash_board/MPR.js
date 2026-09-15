@@ -11,8 +11,8 @@ import DashBoardHeader from "./DashBoardHeader";
 import LeftNav from "./LeftNav";
 
 // API URLs
-const YEARLY_DATA_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
-const MONTHLY_DATA_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/report-billing-items/";
+const YEARLY_DATA_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
+const MONTHLY_DATA_URL = "https://mahadevaaya.com/govbillingsystem/backend/api/report-billing-items/";
 
 // Helper function to format numbers as currency
 const formatCurrency = (amount) => {
@@ -62,7 +62,7 @@ const componentColumnMapping = {
   },
   investment_name: { header: 'निवेश का नाम', accessor: (item) => item.investment_name },
   unit: { header: 'इकाई', accessor: (item) => item.unit },
-  allocated_quantity: { header: 'आवंटित मात्रा', accessor: (item) => item.allocated_quantity },
+  allocated_quantity: { header: 'आवंटित मात्रा ', accessor: (item) => item.allocated_quantity },
   updated_quantity: { header: 'अपडेट की गई मात्रा', accessor: (item) => item.updated_quantity || '-' },
   rate: { header: 'दर', accessor: (item) => `₹${item.rate}` },
   buyAmount: { header: 'खरीद राशि', accessor: (item) => `₹${item.buy_amount}` },
@@ -88,7 +88,7 @@ const availableComponentColumns = [
   { key: 'reportId', label: 'रिपोर्ट आईडी' },
   { key: 'investment_name', label: 'निवेश का नाम' },
   { key: 'unit', label: 'इकाई' },
-  { key: 'allocated_quantity', label: 'आवंटित मात्रा' },
+  { key: 'allocated_quantity', label: 'आवंटित मात्रा ' },
   { key: 'updated_quantity', label: 'अपडेट की गई मात्रा' },
   { key: 'rate', label: 'दर' },
   { key: 'buyAmount', label: 'खरीद राशि' },
@@ -119,7 +119,7 @@ const translations = {
   reportId: "रिपोर्ट आईडी",
   investmentName: "निवेश का नाम",
   unit: "इकाई",
-  allocatedQuantity: "आवंटित मात्रा",
+  allocatedQuantity: "आवंटित मात्रा ",
   updatedQuantity: "अपडेट की गई मात्रा",
   rate: "दर",
   buyAmount: "खरीद राशि",
@@ -1086,7 +1086,7 @@ const downloadExcel = (data, filename, columnMapping, selectedColumns, includeTo
   // View receipt file
   const viewReceipt = (receiptPath) => {
     if (receiptPath) {
-      const fullUrl = `https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend${receiptPath}`;
+      const fullUrl = `https://mahadevaaya.com/govbillingsystem/backend${receiptPath}`;
       window.open(fullUrl, '_blank');
     }
   };

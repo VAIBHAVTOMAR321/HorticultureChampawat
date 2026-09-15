@@ -25,9 +25,9 @@ import LeftNav from "./LeftNav";
 
 // API URLs
 const COMPONENT_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/component-list/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/component-list/";
 const SCHEME_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/scheme-list/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/scheme-list/";
 
 // Hindi translations
 const translations = {
@@ -129,7 +129,7 @@ const componentDetailColumns = [
   { key: 'component', label: 'घटक' },
   { key: 'scheme_name', label: 'योजना' },
   { key: 'unit', label: 'इकाई' },
-  { key: 'allocated_quantity', label: 'आवंटित मात्रा' },
+  { key: 'allocated_quantity', label: 'आवंटित मात्रा ' },
   { key: 'updated_quantity', label: 'बिकी मात्रा' },
   { key: 'rate', label: 'दर' },
   { key: 'source_of_receipt', label: 'स्रोत' },
@@ -142,7 +142,7 @@ const schemeDetailColumns = [
   { key: 'component', label: 'घटक' },
   { key: 'scheme_name', label: 'योजना' },
   { key: 'investment_name', label: 'निवेश' },
-  { key: 'allocated_quantity', label: 'आवंटित मात्रा' },
+  { key: 'allocated_quantity', label: 'आवंटित मात्रा ' },
   { key: 'updated_quantity', label: 'बिकी मात्रा' },
   { key: 'rate', label: 'दर' },
   { key: 'source_of_receipt', label: 'स्रोत' },
@@ -155,7 +155,7 @@ const investmentDetailColumns = [
   { key: 'component', label: 'घटक' },
   { key: 'scheme_name', label: 'योजना' },
   { key: 'unit', label: 'इकाई' },
-  { key: 'allocated_quantity', label: 'आवंटित मात्रा' },
+  { key: 'allocated_quantity', label: 'आवंटित मात्रा ' },
   { key: 'updated_quantity', label: 'बिकी मात्रा' },
   { key: 'rate', label: 'दर' },
   { key: 'source_of_receipt', label: 'स्रोत' },
@@ -168,7 +168,7 @@ const unitDetailColumns = [
   { key: 'component', label: 'घटक' },
   { key: 'scheme_name', label: 'योजना' },
   { key: 'investment_name', label: 'निवेश' },
-  { key: 'allocated_quantity', label: 'आवंटित मात्रा' },
+  { key: 'allocated_quantity', label: 'आवंटित मात्रा ' },
   { key: 'updated_quantity', label: 'बिकी मात्रा' },
   { key: 'rate', label: 'दर' },
   { key: 'source_of_receipt', label: 'स्रोत' },
@@ -315,7 +315,7 @@ const AddEditComponent = () => {
   const fetchBillingItems = async () => {
     setBillingItemsLoading(true);
     try {
-      const resp = await axios.get("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/");
+      const resp = await axios.get("https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/");
       setBillingItems(resp.data || []);
 
       // Extract unique values from billing-items API for consistency

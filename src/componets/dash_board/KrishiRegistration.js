@@ -33,11 +33,11 @@ import {
 
 // API URLs
 const BENEFICIARIES_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/beneficiaries-registration/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/beneficiaries-registration/";
 const VIKAS_KHAND_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/get-vikas-khand-by-center/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/get-vikas-khand-by-center/";
 const FORM_FILTERS_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/beneficiaries-registration/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/beneficiaries-registration/";
 
 // Utility function to round numbers to 2 decimal places
 const roundTo2Decimals = (value) => {
@@ -46,7 +46,7 @@ const roundTo2Decimals = (value) => {
 };
 
 const validKendraNames = [
- "बस्तिया",
+   "बस्तिया",
   "सूखीढांग",
   "चम्पावत",
   "मंच",
@@ -62,7 +62,7 @@ const validKendraNames = [
 
 // Updated center options with exact names from your list
 const centerOptions = [
- "बस्तिया",
+  "बस्तिया",
   "सूखीढांग",
   "चम्पावत",
   "मंच",
@@ -1764,7 +1764,7 @@ const KrishiRegistration = () => {
       const today = getTodayInDisplayFormat();
       const sampleData = [
         {
-          "केंद्र का नाम": "बस्तिया",
+          "केंद्र का नाम": "कोटद्वार",
           "योजना का नाम": "MGNREGA",
           "आपूर्ति की गई वस्तु का नाम": "बीज",
           "किसान का नाम": "रामेश कुमार",
@@ -1990,7 +1990,7 @@ const KrishiRegistration = () => {
       setIsLoading(true);
       const payload = { beneficiary_id: selectedItems };
       await axios.delete(
-        "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/beneficiaries-registration/",
+        "https://mahadevaaya.com/govbillingsystem/backend/api/beneficiaries-registration/",
         { data: payload },
       );
 

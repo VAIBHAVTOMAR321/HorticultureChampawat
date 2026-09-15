@@ -15,11 +15,12 @@ import {
   Pagination,
   ProgressBar,
   Modal,
+  Table,
 } from "react-bootstrap";
 import Select from "react-select";
 import * as XLSX from "xlsx";
 import html2pdf from "html2pdf.js";
-import { FaDownload } from "react-icons/fa";
+import { FaDownload, FaEye } from "react-icons/fa";
 import "../../assets/css/dashboard.css";
 import "../../assets/css/table.css";
 import DashBoardHeader from "./DashBoardHeader";
@@ -32,12 +33,12 @@ import {
 
 // API URLs
 const GET_REPORTS_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/report-billing-items/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/report-billing-items/";
 const UPDATE_REPORT_STATUS_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/update-billing-item/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/update-billing-item/";
 const UPDATE_BILLING_REPORT_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-report/update/";
-const BASE_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-report/update/";
+const BASE_URL = "https://mahadevaaya.com/govbillingsystem/backend";
 
 // Custom styles for react-select components
 const customSelectStyles = {
@@ -105,11 +106,12 @@ const translations = {
   nivesh: "निवेश",
   subniveshName: "उप-निवेश का नाम",
   unit: "इकाई",
-  allocatedQuantity: "आवंटित मात्रा",
+  allocatedQuantity: "आवंटित मात्रा ",
   rate: "दर",
   updatedQuantity: "अपडेट की गई मात्रा",
   buyAmount: "कुल राशि",
   schemeName: "योजना का नाम",
+  sourceOfReceipt: "सप्लायर",
   totalItems: "कुल आइटम",
   showing: "दिखा रहे हैं",
   to: "से",
@@ -124,7 +126,6 @@ const translations = {
   quantityLeft: "बची हुई मात्रा",
   allotedRashi: "आवंटित राशि",
   soldRashi: "बेची गई राशि",
-  cutQuantity: "कट मात्रा",
   totalBill: "कुल बिल",
   billingDate: "बिलिंग दिनांक",
   edit: "संपादित करें",
@@ -153,6 +154,12 @@ const translations = {
   bill: "बिल",
   bills: "बिल",
   openedInTabs: "ब्राउज़र टैब में खोले गए (ब्राउज़र ने ऑटो-डाउनलोड ब्लॉक किया हो सकता है)",
+  componentPageno: "उप-निवेश पेज नंबर",
+  viewPagesBtn: "पेज देखें",
+  pageDetails: "पेज नंबर विवरण",
+  noPageData: "कोई पेज नंबर उपलब्ध नहीं है।",
+  closeBtn: "बंद करें",
+  pageNo: "पेज नंबर",
 };
 
 // Available columns for component download
@@ -160,12 +167,14 @@ const availableComponentColumns = [
   { key: "reportId", label: translations.reportId },
   { key: "nivesh", label: translations.nivesh },
   { key: "subnivesh_name", label: translations.subniveshName },
+  { key: "scheme_name", label: translations.schemeName },
+  { key: "source_of_receipt", label: translations.sourceOfReceipt },
   { key: "unit", label: translations.unit },
   { key: "allocated_quantity", label: translations.allocatedQuantity },
   { key: "rate", label: translations.rate },
   { key: "updated_quantity", label: translations.updatedQuantity },
-  { key: "buyAmount", label: translations.buyAmount },
-  { key: "scheme_name", label: translations.schemeName },
+  { key: "buy_amount", label: translations.allotedRashi },
+  { key: "sold_amount", label: translations.soldRashi },
 ];
 
 // Format date for display
@@ -176,24 +185,8 @@ const formatDate = (dateString) => {
 };
 
 // Calculation functions
-const calculateQuantityLeft = (allocated, updated, cut) => {
-  return (
-    (parseFloat(allocated) || 0) -
-    (parseFloat(updated) || 0) -
-    (parseFloat(cut) || 0)
-  );
-};
-
-const calculateAllocatedAmount = (allocated, rate) => {
-  return (parseFloat(allocated) || 0) * (parseFloat(rate) || 0);
-};
-
-const calculateAmount = (updated, rate) => {
-  return (parseFloat(updated) || 0) * (parseFloat(rate) || 0);
-};
-
-const calculateTotalBill = (cut, rate) => {
-  return (parseFloat(cut) || 0) * (parseFloat(rate) || 0);
+const calculateQuantityLeft = (allocated, updated) => {
+  return (parseFloat(allocated) || 0) - (parseFloat(updated) || 0);
 };
 
 // Column mapping for component data access
@@ -215,6 +208,10 @@ const columnMapping = {
     header: translations.schemeName,
     accessor: (item) => item.scheme_name,
   },
+  source_of_receipt: {
+    header: translations.sourceOfReceipt,
+    accessor: (item) => item.source_of_receipt,
+  },
   unit: { header: translations.unit, accessor: (item) => item.unit },
   allocated_quantity: {
     header: translations.allocatedQuantity,
@@ -224,40 +221,14 @@ const columnMapping = {
     header: translations.updatedQuantity,
     accessor: (item) => item.updated_quantity,
   },
-  quantity_left: {
-    header: translations.quantityLeft,
-    accessor: (item) =>
-      calculateQuantityLeft(
-        item.allocated_quantity,
-        item.updated_quantity,
-        item.cut_quantity
-      ),
-  },
-  alloted_rashi: {
-    header: translations.allotedRashi,
-    accessor: (item) =>
-      calculateAllocatedAmount(item.allocated_quantity, item.rate),
-  },
-  sold_rashi: {
-    header: translations.soldRashi,
-    accessor: (item) => calculateAmount(item.updated_quantity, item.rate),
-  },
-  cut_quantity: {
-    header: translations.cutQuantity,
-    accessor: (item) => item.cut_quantity,
-  },
   rate: { header: translations.rate, accessor: (item) => item.rate },
-  buyAmount: {
-    header: translations.buyAmount,
+  buy_amount: {
+    header: translations.allotedRashi,
+    accessor: (item) => item.buy_amount,
+  },
+  sold_amount: {
+    header: translations.soldRashi,
     accessor: (item) => item.sold_amount,
-  },
-  total_bill: {
-    header: translations.totalBill,
-    accessor: (item) => calculateTotalBill(item.cut_quantity, item.rate),
-  },
-  billing_date: {
-    header: translations.billingDate,
-    accessor: (item) => item.billing_date,
   },
 };
 
@@ -272,9 +243,7 @@ const calculateReportSoldAmount = (item) => {
 };
 
 const downloadFilteredBillsPdf = (data, currentFilters) => {
-  if (!data || data.length === 0) {
-    return;
-  }
+  if (!data || data.length === 0) return;
 
   const formatStatus = (status) =>
     status === "accepted"
@@ -286,54 +255,32 @@ const downloadFilteredBillsPdf = (data, currentFilters) => {
   const filterSummary = [];
   if (currentFilters.center_name.length > 0)
     filterSummary.push(
-      `केंद्र: ${currentFilters.center_name
-        .map((c) => c.label)
-        .join(", ")}`,
+      `केंद्र: ${currentFilters.center_name.map((c) => c.label).join(", ")}`
     );
   if (currentFilters.bill_id.length > 0)
     filterSummary.push(
-      `बिल संख्या: ${currentFilters.bill_id
-        .map((b) => b.label)
-        .join(", ")}`,
+      `बिल संख्या: ${currentFilters.bill_id.map((b) => b.label).join(", ")}`
     );
   if (currentFilters.status.length > 0)
     filterSummary.push(
-      `स्थिति: ${currentFilters.status
-        .map((s) => s.label)
-        .join(", ")}`,
+      `स्थिति: ${currentFilters.status.map((s) => s.label).join(", ")}`
     );
-  if (currentFilters.dateFrom)
-    filterSummary.push(`From: ${currentFilters.dateFrom}`);
-  if (currentFilters.dateTo)
-    filterSummary.push(`To: ${currentFilters.dateTo}`);
+  if (currentFilters.dateFrom) filterSummary.push(`From: ${currentFilters.dateFrom}`);
+  if (currentFilters.dateTo) filterSummary.push(`To: ${currentFilters.dateTo}`);
 
   const rowsHtml = data
     .map(
       (item, idx) => `
         <tr>
-          <td style="border:1px solid #444;padding:6px;text-align:center;">${
-            idx + 1
-          }</td>
-          <td style="border:1px solid #444;padding:6px;">${
-            item.bill_report_id || ""
-          }</td>
-          <td style="border:1px solid #444;padding:6px;">${
-            item.center_name || ""
-          }</td>
-          <td style="border:1px solid #444;padding:6px;">${formatDate(
-            item.billing_date,
-          )}</td>
-          <td style="border:1px solid #444;padding:6px;">${formatStatus(
-            item.status,
-          )}</td>
-          <td style="border:1px solid #444;padding:6px;text-align:right;">${
-            item.component_data?.length || 0
-          }</td>
-          <td style="border:1px solid #444;padding:6px;text-align:right;">${
-            calculateReportSoldAmount(item)
-          }</td>
+          <td style="border:1px solid #444;padding:6px;text-align:center;">${idx + 1}</td>
+          <td style="border:1px solid #444;padding:6px;">${item.bill_report_id || ""}</td>
+          <td style="border:1px solid #444;padding:6px;">${item.center_name || ""}</td>
+          <td style="border:1px solid #444;padding:6px;">${formatDate(item.billing_date)}</td>
+          <td style="border:1px solid #444;padding:6px;">${formatStatus(item.status)}</td>
+          <td style="border:1px solid #444;padding:6px;text-align:right;">${item.component_data?.length || 0}</td>
+          <td style="border:1px solid #444;padding:6px;text-align:right;">${calculateReportSoldAmount(item)}</td>
         </tr>
-      `,
+      `
     )
     .join("");
 
@@ -423,16 +370,10 @@ const reportsColumnMapping = {
   },
 };
 
-/**
- * Comprehensive PDF path finder.
- * Checks many possible field names on the item AND inside component_data.
- * Logs the first item's keys to browser console for debugging.
- */
 let _debugLogged = false;
 const getBillPdfPath = (item) => {
   if (!item) return null;
 
-  // Debug: log the first item's keys so you can see the exact field names
   if (!_debugLogged) {
     _debugLogged = true;
     console.log(
@@ -440,55 +381,18 @@ const getBillPdfPath = (item) => {
       "color: blue; font-weight: bold;",
       Object.keys(item)
     );
-    console.log(
-      "%c[AllBills Debug] First bill item full data:",
-      "color: blue; font-weight: bold;",
-      item
-    );
-    if (item.component_data && item.component_data.length > 0) {
-      console.log(
-        "%c[AllBills Debug] First component_data keys:",
-        "color: green; font-weight: bold;",
-        Object.keys(item.component_data[0])
-      );
-      console.log(
-        "%c[AllBills Debug] First component_data full data:",
-        "color: green; font-weight: bold;",
-        item.component_data[0]
-      );
-    }
   }
 
-  // All possible field names where the PDF path might be stored
+  if (item.recipt_file) return item.recipt_file;
+
   const pathFields = [
-    "receipt_path",
-    "pdf_path",
-    "bill_pdf_path",
-    "file_path",
-    "bill_pdf",
-    "pdf",
-    "receipt",
-    "document_path",
-    "document",
-    "bill_file",
-    "receipt_url",
-    "pdf_url",
-    "download_url",
-    "bill_path",
-    "report_path",
-    "file",
-    "path",
-    "receipt_file",
-    "pdf_file",
-    "bill_document",
-    "generated_pdf",
-    "bill_receipt",
-    "report_pdf",
-    "invoice_path",
-    "invoice_pdf",
+    "receipt_path", "pdf_path", "bill_pdf_path", "file_path", "bill_pdf",
+    "pdf", "receipt", "document_path", "document", "bill_file", "receipt_url",
+    "pdf_url", "download_url", "bill_path", "report_path", "file", "path",
+    "receipt_file", "pdf_file", "bill_document", "generated_pdf",
+    "bill_receipt", "report_pdf", "invoice_path", "invoice_pdf",
   ];
 
-  // Check direct fields on the item
   for (const field of pathFields) {
     if (
       item[field] &&
@@ -501,7 +405,6 @@ const getBillPdfPath = (item) => {
     }
   }
 
-  // Check nested inside component_data[0]
   if (item.component_data && item.component_data.length > 0) {
     const comp = item.component_data[0];
     for (const field of pathFields) {
@@ -517,7 +420,6 @@ const getBillPdfPath = (item) => {
     }
   }
 
-  // Check if any field value looks like a URL or file path (ends with .pdf)
   for (const key of Object.keys(item)) {
     const val = item[key];
     if (
@@ -536,19 +438,10 @@ const getBillPdfPath = (item) => {
   return null;
 };
 
-/**
- * Build the full URL for a bill PDF, normalizing path slashes.
- */
 const buildBillPdfUrl = (path) => {
   if (!path) return null;
-  // If path is already a full URL, return as-is
-  if (path.startsWith("http://") || path.startsWith("https://")) {
-    return path;
-  }
-  // Avoid double slashes
-  if (path.startsWith("/")) {
-    return `${BASE_URL}${path}`;
-  }
+  if (path.startsWith("http://") || path.startsWith("https://")) return path;
+  if (path.startsWith("/")) return `${BASE_URL}${path}`;
   return `${BASE_URL}/${path}`;
 };
 
@@ -557,12 +450,10 @@ const AllBills = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isTablet, setIsTablet] = useState(false);
 
-  // API data state
   const [reportsData, setReportsData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Multi-bill PDF download state
   const [downloading, setDownloading] = useState(false);
   const [downloadSuccess, setDownloadSuccess] = useState(false);
   const [downloadError, setDownloadError] = useState(null);
@@ -570,11 +461,9 @@ const AllBills = () => {
   const [downloadProgress, setDownloadProgress] = useState(null);
   const [downloadPhase, setDownloadPhase] = useState("");
 
-  // Multi-selection state
   const [selectedBillIds, setSelectedBillIds] = useState(() => new Set());
   const selectAllCheckboxRef = useRef(null);
 
-  // Status update state
   const [updatingStatus, setUpdatingStatus] = useState(null);
   const [statusUpdateSuccess, setStatusUpdateSuccess] = useState(false);
   const [statusUpdateError, setStatusUpdateError] = useState(null);
@@ -582,10 +471,12 @@ const AllBills = () => {
   const [reportToCancel, setReportToCancel] = useState(null);
   const [billIdToCancel, setBillIdToCancel] = useState(null);
 
-  // Expanded reports state
   const [expandedReports, setExpandedReports] = useState({});
 
-  // Filter state
+  // Page Details Modal State
+  const [showPageModal, setShowPageModal] = useState(false);
+  const [currentPageData, setCurrentPageData] = useState([]);
+
   const [filters, setFilters] = useState({
     center_name: [],
     bill_id: [],
@@ -594,16 +485,13 @@ const AllBills = () => {
     dateTo: "",
   });
 
-  // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
 
-  // Component column selection state
   const [selectedComponentColumns, setSelectedComponentColumns] = useState(
     availableComponentColumns.map((col) => col.key)
   );
 
-  // Edit modal state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingReportId, setEditingReportId] = useState(null);
   const [editData, setEditData] = useState({
@@ -619,7 +507,6 @@ const AllBills = () => {
   const [currentEditItem, setCurrentEditItem] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // ─── Device detection ───
   useEffect(() => {
     const checkDevice = () => {
       const width = window.innerWidth;
@@ -632,7 +519,6 @@ const AllBills = () => {
     return () => window.removeEventListener("resize", checkDevice);
   }, []);
 
-  // ─── Fetch data ───
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -653,38 +539,35 @@ const AllBills = () => {
     fetchData();
   }, []);
 
-  // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [filters]);
 
-  // ─── Filter options ───
   const filterOptions = useMemo(() => {
     if (!reportsData || reportsData.length === 0) {
       return { center_name: [], bill_id: [], status: [] };
     }
     return {
-      center_name: [
-        ...new Set(reportsData.map((item) => item.center_name)),
-      ].map((name) => ({ value: name, label: name })),
-      bill_id: [
-        ...new Set(reportsData.map((item) => item.bill_report_id)),
-      ].map((id) => ({ value: id, label: id })),
-      status: [...new Set(reportsData.map((item) => item.status))].map(
-        (status) => ({
-          value: status,
-          label:
-            status === "accepted"
-              ? translations.accepted
-              : status === "cancelled"
-              ? translations.cancelled
-              : status,
-        })
-      ),
+      center_name: [...new Set(reportsData.map((item) => item.center_name))].map((name) => ({
+        value: name,
+        label: name,
+      })),
+      bill_id: [...new Set(reportsData.map((item) => item.bill_report_id))].map((id) => ({
+        value: id,
+        label: id,
+      })),
+      status: [...new Set(reportsData.map((item) => item.status))].map((status) => ({
+        value: status,
+        label:
+          status === "accepted"
+            ? translations.accepted
+            : status === "cancelled"
+            ? translations.cancelled
+            : status,
+      })),
     };
   }, [reportsData]);
 
-  // ─── Filtered data ───
   const filteredData = useMemo(() => {
     return reportsData.filter((item) => {
       const matchesCenter =
@@ -697,30 +580,17 @@ const AllBills = () => {
         filters.status.length === 0 ||
         filters.status.some((s) => s.value === item.status);
       const itemDate = new Date(item.billing_date);
-      const matchesDateFrom =
-        !filters.dateFrom || itemDate >= new Date(filters.dateFrom);
-      const matchesDateTo =
-        !filters.dateTo || itemDate <= new Date(filters.dateTo + "T23:59:59");
-      return (
-        matchesCenter &&
-        matchesBillId &&
-        matchesStatus &&
-        matchesDateFrom &&
-        matchesDateTo
-      );
+      const matchesDateFrom = !filters.dateFrom || itemDate >= new Date(filters.dateFrom);
+      const matchesDateTo = !filters.dateTo || itemDate <= new Date(filters.dateTo + "T23:59:59");
+      return matchesCenter && matchesBillId && matchesStatus && matchesDateFrom && matchesDateTo;
     });
   }, [reportsData, filters]);
 
-  // ─── Pagination ───
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-  const paginatedReportsData = filteredData.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
+  const paginatedReportsData = filteredData.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
 
-  // ─── Selection state for current page ───
   const currentPageBillIds = useMemo(
     () => paginatedReportsData.map((item) => item.id),
     [paginatedReportsData]
@@ -735,8 +605,7 @@ const AllBills = () => {
 
   const someCurrentPageSelected = useMemo(
     () =>
-      currentPageBillIds.some((id) => selectedBillIds.has(id)) &&
-      !allCurrentPageSelected,
+      currentPageBillIds.some((id) => selectedBillIds.has(id)) && !allCurrentPageSelected,
     [currentPageBillIds, selectedBillIds, allCurrentPageSelected]
   );
 
@@ -748,27 +617,16 @@ const AllBills = () => {
     }
   }, [someCurrentPageSelected]);
 
-  const toggleSidebar = useCallback(
-    () => setSidebarOpen((prev) => !prev),
-    []
-  );
+  const toggleSidebar = useCallback(() => setSidebarOpen((prev) => !prev), []);
 
-  // ─── Filter handlers ───
   const handleFilterChange = (filterName, value) => {
     setFilters((prev) => ({ ...prev, [filterName]: value }));
   };
 
   const clearFilters = () => {
-    setFilters({
-      center_name: [],
-      bill_id: [],
-      status: [],
-      dateFrom: "",
-      dateTo: "",
-    });
+    setFilters({ center_name: [], bill_id: [], status: [], dateFrom: "", dateTo: "" });
   };
 
-  // ─── Selection handlers ───
   const toggleSelectAll = useCallback(() => {
     setSelectedBillIds((prev) => {
       const next = new Set(prev);
@@ -797,7 +655,6 @@ const AllBills = () => {
     setSelectedBillIds(new Set());
   }, []);
 
-  // ─── Toggle report details ───
   const toggleReportDetails = (reportId) => {
     setExpandedReports((prev) => ({
       ...prev,
@@ -805,11 +662,31 @@ const AllBills = () => {
     }));
   };
 
-  // ─── Download: multiple selected bill PDFs ───
+  // --- New function to handle View Pages modal ---
+  const handleViewPages = (item) => {
+    const pagenoData = item.component_pageno;
+    let parsedData = [];
+
+    if (pagenoData && pagenoData.length > 0) {
+      // Case 1: [["आम कलम", "आम कलम-2"], 19838]
+      if (pagenoData.length === 2 && Array.isArray(pagenoData[0]) && !Array.isArray(pagenoData[1])) {
+        parsedData = [{ names: pagenoData[0], pageNo: pagenoData[1] }];
+      } 
+      // Case 2: [[["आम कलम"], 1], [["लीची"], 2]]
+      else if (pagenoData.every(group => Array.isArray(group) && group.length === 2 && Array.isArray(group[0]))) {
+        parsedData = pagenoData.map(group => ({ names: group[0], pageNo: group[1] }));
+      } else {
+        // Fallback for unexpected structures
+        parsedData = [{ names: [String(pagenoData[0])], pageNo: pagenoData[1] || "N/A" }];
+      }
+    }
+
+    setCurrentPageData(parsedData);
+    setShowPageModal(true);
+  };
+
   const downloadSelectedBills = async () => {
-    const selectedItems = reportsData.filter((item) =>
-      selectedBillIds.has(item.id)
-    );
+    const selectedItems = reportsData.filter((item) => selectedBillIds.has(item.id));
 
     if (selectedItems.length === 0) return;
 
@@ -822,21 +699,17 @@ const AllBills = () => {
     try {
       const payload = buildReceiptZipDownloadPayload(selectedItems);
       const response = await fetch(
-        "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/download-multiple-receipts/",
+        "https://mahadevaaya.com/govbillingsystem/backend/api/download-multiple-receipts/",
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         }
       );
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `HTTP error! status: ${response.status}, details: ${errorText}`
-        );
+        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
       }
 
       const blob = await response.blob();
@@ -847,9 +720,7 @@ const AllBills = () => {
       setLastDownloadType("receipts");
     } catch (downloadErr) {
       console.error("[AllBills] Receipt zip download failed:", downloadErr);
-      setDownloadError(
-        downloadErr.message || translations.downloadError
-      );
+      setDownloadError(downloadErr.message || translations.downloadError);
     } finally {
       setDownloading(false);
       setDownloadProgress(null);
@@ -863,7 +734,6 @@ const AllBills = () => {
     }
   };
 
-  // ─── View receipt (existing single-bill logic) ───
   const viewReceipt = (receiptPath) => {
     if (!receiptPath) {
       console.warn("[AllBills] viewReceipt called with no path.");
@@ -872,28 +742,23 @@ const AllBills = () => {
     const fullUrl = buildBillPdfUrl(receiptPath);
     const filename = receiptPath.split("/").pop() || "bill.pdf";
 
-    // Create a temporary anchor element to trigger the download
     const anchor = document.createElement("a");
     anchor.href = fullUrl;
-    anchor.download = filename; // This attribute tells the browser to download the file
-    anchor.target = "_blank"; // Fallback to open in a new tab if download is blocked
+    anchor.download = filename;
+    anchor.target = "_blank";
 
     document.body.appendChild(anchor);
     anchor.click();
     document.body.removeChild(anchor);
   };
 
-  // ─── Status update ───
   const handleStatusUpdate = async () => {
     try {
       setUpdatingStatus(reportToCancel);
       setStatusUpdateError(null);
       setStatusUpdateSuccess(false);
 
-      const payload = {
-        bill_report_id: billIdToCancel,
-        status: "cancelled",
-      };
+      const payload = { bill_report_id: billIdToCancel, status: "cancelled" };
 
       const response = await fetch(UPDATE_REPORT_STATUS_URL, {
         method: "PUT",
@@ -903,9 +768,7 @@ const AllBills = () => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(
-          `HTTP error! status: ${response.status}, details: ${errorText}`
-        );
+        throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
       }
 
       await response.json();
@@ -939,7 +802,6 @@ const AllBills = () => {
     setBillIdToCancel(null);
   };
 
-  // ─── Edit modal ───
   const openEditModal = (item) => {
     setCurrentEditItem(item);
     setEditingReportId(item.id);
@@ -1003,10 +865,7 @@ const AllBills = () => {
         })),
       };
 
-      if (
-        editData.changeNewBillNumber &&
-        editData.new_bill_report_id !== editData.old_bill_report_id
-      ) {
+      if (editData.changeNewBillNumber && editData.new_bill_report_id !== editData.old_bill_report_id) {
         payload.new_bill_report_id = editData.new_bill_report_id;
       }
 
@@ -1032,9 +891,7 @@ const AllBills = () => {
                 : item.bill_report_id,
               billing_date: editData.billing_date,
               component_data: item.component_data.map((comp) => {
-                const updatedBill = editData.multiple_bills.find(
-                  (b) => b.bill_id === comp.bill_id
-                );
+                const updatedBill = editData.multiple_bills.find((b) => b.bill_id === comp.bill_id);
                 return updatedBill
                   ? {
                       ...comp,
@@ -1042,8 +899,7 @@ const AllBills = () => {
                       rate: updatedBill.rate,
                       updated_quantity: updatedBill.updated_quantity,
                       sold_amount: (
-                        parseFloat(updatedBill.updated_quantity) *
-                        parseFloat(updatedBill.rate)
+                        parseFloat(updatedBill.updated_quantity) * parseFloat(updatedBill.rate)
                       ).toFixed(2),
                     }
                   : comp;
@@ -1063,57 +919,45 @@ const AllBills = () => {
     }
   };
 
-  // ─── Component-level Excel download ───
   const downloadExcelComponent = (componentData, filename, billReportId) => {
     try {
       const excelData = componentData.map((item) => {
         const row = {};
         selectedComponentColumns.forEach((col) => {
-          row[columnMapping[col].header] = columnMapping[col].accessor(
-            item,
-            billReportId
-          );
+          row[columnMapping[col].header] = columnMapping[col].accessor(item, billReportId);
         });
         return row;
       });
 
       const totals = componentData.reduce(
         (acc, comp) => {
-          if (selectedComponentColumns.includes("allocatedQuantity"))
+          if (selectedComponentColumns.includes("allocated_quantity"))
             acc.allocated += parseFloat(comp.allocated_quantity) || 0;
-          if (selectedComponentColumns.includes("rate"))
-            acc.rate += parseFloat(comp.rate) || 0;
-          if (selectedComponentColumns.includes("updatedQuantity"))
+          if (selectedComponentColumns.includes("rate")) acc.rate += parseFloat(comp.rate) || 0;
+          if (selectedComponentColumns.includes("updated_quantity"))
             acc.updated += parseFloat(comp.updated_quantity) || 0;
-          if (selectedComponentColumns.includes("buyAmount"))
-            acc.buy += parseFloat(comp.sold_amount) || 0;
+          if (selectedComponentColumns.includes("buy_amount"))
+            acc.buy += parseFloat(comp.buy_amount) || 0;
+          if (selectedComponentColumns.includes("sold_amount"))
+            acc.sold += parseFloat(comp.sold_amount) || 0;
           return acc;
         },
-        { allocated: 0, rate: 0, updated: 0, buy: 0 }
+        { allocated: 0, rate: 0, updated: 0, buy: 0, sold: 0 }
       );
 
-      if (
-        selectedComponentColumns.some((col) =>
-          [
-            "allocatedQuantity",
-            "rate",
-            "updatedQuantity",
-            "buyAmount",
-          ].includes(col)
-        )
-      ) {
+      const hasTotals = selectedComponentColumns.some((col) =>
+        ["allocated_quantity", "rate", "updated_quantity", "buy_amount", "sold_amount"].includes(col)
+      );
+
+      if (hasTotals) {
         const totalRow = {};
         selectedComponentColumns.forEach((col) => {
-          if (col === "reportId")
-            totalRow[columnMapping[col].header] = "Total";
-          else if (col === "allocatedQuantity")
-            totalRow[columnMapping[col].header] = totals.allocated;
-          else if (col === "rate")
-            totalRow[columnMapping[col].header] = totals.rate;
-          else if (col === "updatedQuantity")
-            totalRow[columnMapping[col].header] = totals.updated;
-          else if (col === "buyAmount")
-            totalRow[columnMapping[col].header] = totals.buy;
+          if (col === "reportId") totalRow[columnMapping[col].header] = "Total";
+          else if (col === "allocated_quantity") totalRow[columnMapping[col].header] = totals.allocated;
+          else if (col === "rate") totalRow[columnMapping[col].header] = totals.rate;
+          else if (col === "updated_quantity") totalRow[columnMapping[col].header] = totals.updated;
+          else if (col === "buy_amount") totalRow[columnMapping[col].header] = totals.buy;
+          else if (col === "sold_amount") totalRow[columnMapping[col].header] = totals.sold;
           else totalRow[columnMapping[col].header] = "";
         });
         excelData.push(totalRow);
@@ -1128,13 +972,7 @@ const AllBills = () => {
     }
   };
 
-  // ─── Component-level PDF download ───
-  const downloadPdfComponent = (
-    componentData,
-    filename,
-    centerName,
-    billReportId
-  ) => {
+  const downloadPdfComponent = (componentData, filename, centerName, billReportId) => {
     try {
       const headers = selectedComponentColumns
         .map((col) => `<th>${columnMapping[col].header}</th>`)
@@ -1142,10 +980,7 @@ const AllBills = () => {
       const rows = componentData
         .map((item) => {
           const cells = selectedComponentColumns
-            .map(
-              (col) =>
-                `<td>${columnMapping[col].accessor(item, billReportId)}</td>`
-            )
+            .map((col) => `<td>${columnMapping[col].accessor(item, billReportId)}</td>`)
             .join("");
           return `<tr>${cells}</tr>`;
         })
@@ -1153,42 +988,34 @@ const AllBills = () => {
 
       const totals = componentData.reduce(
         (acc, comp) => {
-          if (selectedComponentColumns.includes("allocatedQuantity"))
+          if (selectedComponentColumns.includes("allocated_quantity"))
             acc.allocated += parseFloat(comp.allocated_quantity) || 0;
-          if (selectedComponentColumns.includes("rate"))
-            acc.rate += parseFloat(comp.rate) || 0;
-          if (selectedComponentColumns.includes("updatedQuantity"))
+          if (selectedComponentColumns.includes("rate")) acc.rate += parseFloat(comp.rate) || 0;
+          if (selectedComponentColumns.includes("updated_quantity"))
             acc.updated += parseFloat(comp.updated_quantity) || 0;
-          if (selectedComponentColumns.includes("buyAmount"))
-            acc.buy += parseFloat(comp.sold_amount) || 0;
+          if (selectedComponentColumns.includes("buy_amount"))
+            acc.buy += parseFloat(comp.buy_amount) || 0;
+          if (selectedComponentColumns.includes("sold_amount"))
+            acc.sold += parseFloat(comp.sold_amount) || 0;
           return acc;
         },
-        { allocated: 0, rate: 0, updated: 0, buy: 0 }
+        { allocated: 0, rate: 0, updated: 0, buy: 0, sold: 0 }
       );
 
       let totalRow = "";
-      if (
-        selectedComponentColumns.some((col) =>
-          [
-            "allocatedQuantity",
-            "rate",
-            "updatedQuantity",
-            "buyAmount",
-          ].includes(col)
-        )
-      ) {
+      const hasTotals = selectedComponentColumns.some((col) =>
+        ["allocated_quantity", "rate", "updated_quantity", "buy_amount", "sold_amount"].includes(col)
+      );
+
+      if (hasTotals) {
         const totalCells = selectedComponentColumns
           .map((col) => {
-            if (col === "reportId")
-              return "<td><strong>Total</strong></td>";
-            else if (col === "allocatedQuantity")
-              return `<td><strong>${totals.allocated}</strong></td>`;
-            else if (col === "rate")
-              return `<td><strong>${totals.rate}</strong></td>`;
-            else if (col === "updatedQuantity")
-              return `<td><strong>${totals.updated}</strong></td>`;
-            else if (col === "buyAmount")
-              return `<td><strong>${totals.buy}</strong></td>`;
+            if (col === "reportId") return "<td><strong>Total</strong></td>";
+            else if (col === "allocated_quantity") return `<td><strong>${totals.allocated}</strong></td>`;
+            else if (col === "rate") return `<td><strong>${totals.rate}</strong></td>`;
+            else if (col === "updated_quantity") return `<td><strong>${totals.updated}</strong></td>`;
+            else if (col === "buy_amount") return `<td><strong>${totals.buy}</strong></td>`;
+            else if (col === "sold_amount") return `<td><strong>${totals.sold}</strong></td>`;
             else return "<td></td>";
           })
           .join("");
@@ -1227,17 +1054,11 @@ const AllBills = () => {
     }
   };
 
-  // ─── Pagination ───
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
+  const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
   const paginationItems = [];
   const maxVisiblePages = 5;
-  let startPage = Math.max(
-    1,
-    currentPage - Math.floor(maxVisiblePages / 2)
-  );
+  let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
   let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
 
   if (endPage - startPage < maxVisiblePages - 1) {
@@ -1251,19 +1072,13 @@ const AllBills = () => {
       </Pagination.Item>
     );
     if (startPage > 2) {
-      paginationItems.push(
-        <Pagination.Ellipsis key="start-ellipsis" disabled />
-      );
+      paginationItems.push(<Pagination.Ellipsis key="start-ellipsis" disabled />);
     }
   }
 
   for (let number = startPage; number <= endPage; number++) {
     paginationItems.push(
-      <Pagination.Item
-        key={number}
-        active={number === currentPage}
-        onClick={() => handlePageChange(number)}
-      >
+      <Pagination.Item key={number} active={number === currentPage} onClick={() => handlePageChange(number)}>
         {number}
       </Pagination.Item>
     );
@@ -1271,15 +1086,10 @@ const AllBills = () => {
 
   if (endPage < totalPages) {
     if (endPage < totalPages - 1) {
-      paginationItems.push(
-        <Pagination.Ellipsis key="end-ellipsis" disabled />
-      );
+      paginationItems.push(<Pagination.Ellipsis key="end-ellipsis" disabled />);
     }
     paginationItems.push(
-      <Pagination.Item
-        key={totalPages}
-        onClick={() => handlePageChange(totalPages)}
-      >
+      <Pagination.Item key={totalPages} onClick={() => handlePageChange(totalPages)}>
         {totalPages}
       </Pagination.Item>
     );
@@ -1296,19 +1106,10 @@ const AllBills = () => {
     }
   };
 
-  // ═══════════════════════════════════════════════════════
-  // RENDER
-  // ═══════════════════════════════════════════════════════
-
   if (loading) {
     return (
       <div className="dashboard-container">
-        <LeftNav
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          isMobile={isMobile}
-          isTablet={isTablet}
-        />
+        <LeftNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} isMobile={isMobile} isTablet={isTablet} />
         <div className="main-content d-flex justify-content-center align-items-center">
           <Spinner animation="border" />
         </div>
@@ -1319,17 +1120,10 @@ const AllBills = () => {
   if (error) {
     return (
       <div className="dashboard-container">
-        <LeftNav
-          sidebarOpen={sidebarOpen}
-          setSidebarOpen={setSidebarOpen}
-          isMobile={isMobile}
-          isTablet={isTablet}
-        />
+        <LeftNav sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} isMobile={isMobile} isTablet={isTablet} />
         <div className="main-content">
           <Container fluid className="dashboard-body">
-            <Alert variant="danger">
-              {translations.error}: {error}
-            </Alert>
+            <Alert variant="danger">{translations.error}: {error}</Alert>
           </Container>
         </div>
       </div>
@@ -1349,16 +1143,10 @@ const AllBills = () => {
           <Row className="left-top">
             <Col lg={12} md={12} sm={10}>
               <Container fluid className="dashboard-body-main bg-home">
-                <h1 className="page-title small-fonts">
-                  {translations.allBills}
-                </h1>
+                <h1 className="page-title small-fonts">{translations.allBills}</h1>
 
                 {downloadSuccess && (
-                  <Alert
-                    variant="success"
-                    dismissible
-                    onClose={() => setDownloadSuccess(false)}
-                  >
+                  <Alert variant="success" dismissible onClose={() => setDownloadSuccess(false)}>
                     {lastDownloadType === "bills_fallback"
                       ? `${translations.allBillsDownloaded} (${translations.openedInTabs})`
                       : translations.allBillsDownloaded}
@@ -1366,74 +1154,45 @@ const AllBills = () => {
                 )}
 
                 {statusUpdateSuccess && (
-                  <Alert
-                    variant="success"
-                    dismissible
-                    onClose={() => setStatusUpdateSuccess(false)}
-                  >
+                  <Alert variant="success" dismissible onClose={() => setStatusUpdateSuccess(false)}>
                     {translations.statusUpdateSuccess}
                   </Alert>
                 )}
 
                 {downloadError && (
-                  <Alert
-                    variant="danger"
-                    dismissible
-                    onClose={() => setDownloadError(null)}
-                  >
+                  <Alert variant="danger" dismissible onClose={() => setDownloadError(null)}>
                     {downloadError}
                   </Alert>
                 )}
 
                 {statusUpdateError && (
-                  <Alert
-                    variant="danger"
-                    dismissible
-                    onClose={() => setStatusUpdateError(null)}
-                  >
+                  <Alert variant="danger" dismissible onClose={() => setStatusUpdateError(null)}>
                     {translations.error}: {statusUpdateError}
                   </Alert>
                 )}
 
                 {editSuccess && (
-                  <Alert
-                    variant="success"
-                    dismissible
-                    onClose={() => setEditSuccess(false)}
-                  >
+                  <Alert variant="success" dismissible onClose={() => setEditSuccess(false)}>
                     {translations.updateSuccess}
                   </Alert>
                 )}
 
                 {editError && (
-                  <Alert
-                    variant="danger"
-                    dismissible
-                    onClose={() => setEditError(null)}
-                  >
+                  <Alert variant="danger" dismissible onClose={() => setEditError(null)}>
                     {translations.error}: {editError}
                   </Alert>
                 )}
 
-                {/* ─── Filters Section ─── */}
                 <div className="filter-section mb-4 p-3 border rounded bg-light">
                   <Row className="mb-3">
-                    <Col
-                      md={12}
-                      className="d-flex justify-content-between align-items-center main-table"
-                    >
+                    <Col md={12} className="d-flex justify-content-between align-items-center main-table">
                       <h5 className="mb-0">{translations.filters}</h5>
                       {(filters.center_name.length > 0 ||
                         filters.bill_id.length > 0 ||
                         filters.status.length > 0 ||
                         filters.dateFrom ||
                         filters.dateTo) && (
-                        <Button
-                          variant="outline-secondary"
-                          size="sm"
-                          onClick={clearFilters}
-                          className="small-fonts"
-                        >
+                        <Button variant="outline-secondary" size="sm" onClick={clearFilters} className="small-fonts">
                           {translations.clearAllFilters}
                         </Button>
                       )}
@@ -1443,14 +1202,10 @@ const AllBills = () => {
                   <Row>
                     <Col xs={12} sm={6} md={3} className="mb-2">
                       <FormGroup>
-                        <FormLabel className="form-label">
-                          {translations.centerName}
-                        </FormLabel>
+                        <FormLabel className="form-label">{translations.centerName}</FormLabel>
                         <Select
                           value={filters.center_name}
-                          onChange={(value) =>
-                            handleFilterChange("center_name", value)
-                          }
+                          onChange={(value) => handleFilterChange("center_name", value)}
                           options={filterOptions.center_name}
                           isMulti
                           isClearable
@@ -1465,14 +1220,10 @@ const AllBills = () => {
 
                     <Col xs={12} sm={6} md={3} className="mb-2">
                       <FormGroup>
-                        <FormLabel className="form-label">
-                          {translations.billId}
-                        </FormLabel>
+                        <FormLabel className="form-label">{translations.billId}</FormLabel>
                         <Select
                           value={filters.bill_id}
-                          onChange={(value) =>
-                            handleFilterChange("bill_id", value)
-                          }
+                          onChange={(value) => handleFilterChange("bill_id", value)}
                           options={filterOptions.bill_id}
                           isMulti
                           isClearable
@@ -1487,14 +1238,10 @@ const AllBills = () => {
 
                     <Col xs={12} sm={6} md={3} className="mb-2">
                       <FormGroup>
-                        <FormLabel className="form-label">
-                          {translations.status}
-                        </FormLabel>
+                        <FormLabel className="form-label">{translations.status}</FormLabel>
                         <Select
                           value={filters.status}
-                          onChange={(value) =>
-                            handleFilterChange("status", value)
-                          }
+                          onChange={(value) => handleFilterChange("status", value)}
                           options={filterOptions.status}
                           isMulti
                           isClearable
@@ -1516,9 +1263,7 @@ const AllBills = () => {
                           type="date"
                           className="form-control compact-input small-fonts"
                           value={filters.dateFrom}
-                          onChange={(e) =>
-                            handleFilterChange("dateFrom", e.target.value)
-                          }
+                          onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
                         />
                       </FormGroup>
                     </Col>
@@ -1530,16 +1275,13 @@ const AllBills = () => {
                           type="date"
                           className="form-control compact-input small-fonts"
                           value={filters.dateTo}
-                          onChange={(e) =>
-                            handleFilterChange("dateTo", e.target.value)
-                          }
+                          onChange={(e) => handleFilterChange("dateTo", e.target.value)}
                         />
                       </FormGroup>
                     </Col>
                   </Row>
                 </div>
 
-                {/* ─── Reports Section ─── */}
                 <div className="reports-container">
                   <Row className="mt-3">
                     <div className="col-md-12">
@@ -1548,39 +1290,22 @@ const AllBills = () => {
                           <>
                             <div className="table-info mb-2">
                               <Row className="align-items-center">
-                                <Col
-                                  xs={12}
-                                  md={6}
-                                  className="d-flex align-items-center flex-wrap gap-2 mb-2 mb-md-0"
-                                >
+                                <Col xs={12} md={6} className="d-flex align-items-center flex-wrap gap-2 mb-2 mb-md-0">
                                   <span className="small-fonts">
-                                    {translations.showing}{" "}
-                                    {indexOfFirstItem + 1} {translations.to}{" "}
-                                    {Math.min(
-                                      indexOfLastItem,
-                                      filteredData.length
-                                    )}{" "}
-                                    {translations.of} {filteredData.length}{" "}
-                                    {translations.entries}
+                                    {translations.showing} {indexOfFirstItem + 1} {translations.to}{" "}
+                                    {Math.min(indexOfLastItem, filteredData.length)} {translations.of}{" "}
+                                    {filteredData.length} {translations.entries}
                                   </span>
-                                  <span className="small-fonts me-2">
-                                    {translations.itemsPerPage}
-                                  </span>
+                                  <span className="small-fonts me-2">{translations.itemsPerPage}</span>
                                   <Badge bg="primary">{itemsPerPage}</Badge>
                                 </Col>
 
-                                <Col
-                                  xs={12}
-                                  md={6}
-                                  className="d-flex align-items-center justify-content-md-end flex-wrap gap-2"
-                                >
+                                <Col xs={12} md={6} className="d-flex align-items-center justify-content-md-end flex-wrap gap-2">
                                   {totalSelectedCount > 0 && (
                                     <div className="d-flex align-items-center gap-2 me-2">
                                       <Badge bg="info" pill>
                                         {totalSelectedCount}{" "}
-                                        {totalSelectedCount === 1
-                                          ? translations.bill
-                                          : translations.bills}{" "}
+                                        {totalSelectedCount === 1 ? translations.bill : translations.bills}{" "}
                                         {translations.selectedBills}
                                       </Badge>
                                       <Button
@@ -1598,9 +1323,7 @@ const AllBills = () => {
                                   <Button
                                     variant="outline-primary"
                                     size="sm"
-                                    onClick={() =>
-                                      downloadFilteredBillsPdf(filteredData, filters)
-                                    }
+                                    onClick={() => downloadFilteredBillsPdf(filteredData, filters)}
                                     disabled={filteredData.length === 0 || downloading}
                                     className="small-fonts d-flex align-items-center gap-1"
                                   >
@@ -1612,18 +1335,12 @@ const AllBills = () => {
                                     variant="primary"
                                     size="sm"
                                     onClick={downloadSelectedBills}
-                                    disabled={
-                                      totalSelectedCount === 0 || downloading
-                                    }
+                                    disabled={totalSelectedCount === 0 || downloading}
                                     className="small-fonts d-flex align-items-center gap-1"
                                   >
                                     {downloading ? (
                                       <>
-                                        <Spinner
-                                          animation="border"
-                                          size="sm"
-                                          role="status"
-                                        />
+                                        <Spinner animation="border" size="sm" role="status" />
                                         <span className="ms-1">
                                           {downloadPhase === "fetching"
                                             ? `${translations.fetching} ${downloadProgress?.current || 0}/${downloadProgress?.total || 0}...`
@@ -1635,16 +1352,9 @@ const AllBills = () => {
                                     ) : (
                                       <>
                                         <FaDownload />
-                                        <span>
-                                          {translations.downloadSelectedBills}
-                                        </span>
+                                        <span>{translations.downloadSelectedBills}</span>
                                         {totalSelectedCount > 0 && (
-                                          <Badge
-                                            bg="light"
-                                            text="dark"
-                                            pill
-                                            className="ms-1"
-                                          >
+                                          <Badge bg="light" text="dark" pill className="ms-1">
                                             {totalSelectedCount}
                                           </Badge>
                                         )}
@@ -1660,26 +1370,18 @@ const AllBills = () => {
                                     <ProgressBar
                                       now={
                                         downloadProgress.total > 0
-                                          ? (downloadProgress.current /
-                                              downloadProgress.total) *
-                                            100
+                                          ? (downloadProgress.current / downloadProgress.total) * 100
                                           : 0
                                       }
-                                      variant={
-                                        downloadPhase === "creatingZip"
-                                          ? "warning"
-                                          : "primary"
-                                      }
+                                      variant={downloadPhase === "creatingZip" ? "warning" : "primary"}
                                       style={{ height: "6px" }}
                                       animated
                                     />
                                     <small className="text-muted small-fonts mt-1 d-block">
                                       {downloadPhase === "fetching" &&
                                         `${translations.fetching} ${downloadProgress.current} ${translations.ofWord} ${downloadProgress.total} ${translations.bills}...`}
-                                      {downloadPhase === "creatingZip" &&
-                                        translations.creatingZip}
-                                      {downloadPhase === "complete" &&
-                                        translations.downloadComplete}
+                                      {downloadPhase === "creatingZip" && translations.creatingZip}
+                                      {downloadPhase === "complete" && translations.downloadComplete}
                                     </small>
                                   </Col>
                                 </Row>
@@ -1690,28 +1392,14 @@ const AllBills = () => {
                               <table className="table table-bordered table-hover table-striped small-fonts">
                                 <thead className="table-light">
                                   <tr>
-                                    <th
-                                      style={{
-                                        width: "40px",
-                                        textAlign: "center",
-                                        verticalAlign: "middle",
-                                      }}
-                                    >
+                                    <th style={{ width: "40px", textAlign: "center", verticalAlign: "middle" }}>
                                       <input
                                         type="checkbox"
                                         ref={selectAllCheckboxRef}
                                         checked={allCurrentPageSelected}
                                         onChange={toggleSelectAll}
-                                        title={
-                                          allCurrentPageSelected
-                                            ? translations.clearAllFilters
-                                            : translations.selectAllOnPage
-                                        }
-                                        style={{
-                                          cursor: "pointer",
-                                          width: "16px",
-                                          height: "16px",
-                                        }}
+                                        title={allCurrentPageSelected ? translations.clearAllFilters : translations.selectAllOnPage}
+                                        style={{ cursor: "pointer", width: "16px", height: "16px" }}
                                       />
                                     </th>
                                     <th>{translations.sno}</th>
@@ -1721,75 +1409,38 @@ const AllBills = () => {
                                     <th>{translations.status}</th>
                                     <th>{translations.totalItems}</th>
                                     <th>{translations.buyAmount}</th>
-                                    <th
-                                      style={{
-                                        minWidth: "200px",
-                                        textAlign: "center",
-                                      }}
-                                    >
-                                      {translations.details} /{" "}
-                                      {translations.download}
+                                    <th style={{ minWidth: "250px", textAlign: "center" }}>
+                                      {translations.details} / {translations.download}
                                     </th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {paginatedReportsData.map((item, index) => {
-                                    const isExpanded =
-                                      expandedReports[item.id] || false;
-                                    const isSelected = selectedBillIds.has(
-                                      item.id
-                                    );
+                                    const isExpanded = expandedReports[item.id] || false;
+                                    const isSelected = selectedBillIds.has(item.id);
                                     const pdfPath = getBillPdfPath(item);
 
                                     return (
                                       <React.Fragment key={item.id}>
-                                        <tr
-                                          className={
-                                            isSelected ? "table-primary" : ""
-                                          }
-                                        >
-                                          <td
-                                            style={{
-                                              textAlign: "center",
-                                              verticalAlign: "middle",
-                                            }}
-                                          >
+                                        <tr className={isSelected ? "table-primary" : ""}>
+                                          <td style={{ textAlign: "center", verticalAlign: "middle" }}>
                                             <input
                                               type="checkbox"
                                               checked={isSelected}
-                                              onChange={() =>
-                                                toggleSelectBill(item.id)
-                                              }
-                                              style={{
-                                                cursor: "pointer",
-                                                width: "16px",
-                                                height: "16px",
-                                              }}
+                                              onChange={() => toggleSelectBill(item.id)}
+                                              style={{ cursor: "pointer", width: "16px", height: "16px" }}
                                             />
                                           </td>
                                           <td>
-                                            {reportsColumnMapping.sno.accessor(
-                                              item,
-                                              index,
-                                              currentPage,
-                                              itemsPerPage
-                                            )}
+                                            {reportsColumnMapping.sno.accessor(item, index, currentPage, itemsPerPage)}
                                           </td>
                                           <td>
-                                            <strong>
-                                              {item.bill_report_id}
-                                            </strong>
+                                            <strong>{item.bill_report_id}</strong>
                                           </td>
                                           <td>{item.center_name}</td>
+                                          <td>{formatDate(item.billing_date)}</td>
                                           <td>
-                                            {formatDate(item.billing_date)}
-                                          </td>
-                                          <td>
-                                            <Badge
-                                              variant={getStatusBadgeVariant(
-                                                item.status
-                                              )}
-                                            >
+                                            <Badge variant={getStatusBadgeVariant(item.status)}>
                                               {item.status === "accepted"
                                                 ? translations.accepted
                                                 : item.status === "cancelled"
@@ -1797,51 +1448,46 @@ const AllBills = () => {
                                                 : item.status}
                                             </Badge>
                                           </td>
-                                          <td>
-                                            {item.component_data?.length || 0}
-                                          </td>
-                                          <td>
-                                            {calculateReportSoldAmount(item)}
-                                          </td>
+                                          <td>{item.component_data?.length || 0}</td>
+                                          <td>{calculateReportSoldAmount(item)}</td>
                                           <td>
                                             <div className="d-flex flex-wrap gap-1 justify-content-center">
                                               <Button
                                                 variant="outline-info"
                                                 size="sm"
-                                                onClick={() =>
-                                                  toggleReportDetails(item.id)
-                                                }
+                                                onClick={() => toggleReportDetails(item.id)}
                                                 className="small-fonts"
-                                                title={
-                                                  translations.viewDetails
-                                                }
+                                                title={translations.viewDetails}
                                               >
                                                 {isExpanded ? "▲" : "▼"}
                                               </Button>
+
+                                              {item.component_pageno && item.component_pageno.length > 0 && (
+                                                <Button
+                                                  variant="outline-secondary"
+                                                  size="sm"
+                                                  onClick={() => handleViewPages(item)}
+                                                  className="small-fonts d-flex align-items-center gap-1"
+                                                  title="उप-निवेश पेज नंबर देखें"
+                                                >
+                                                  <FaEye />
+                                                  {translations.viewPagesBtn}
+                                                </Button>
+                                              )}
 
                                               {pdfPath ? (
                                                 <Button
                                                   variant="outline-success"
                                                   size="sm"
-                                                  onClick={() =>
-                                                    viewReceipt(pdfPath)
-                                                  }
+                                                  onClick={() => viewReceipt(pdfPath)}
                                                   className="small-fonts"
-                                                  title={
-                                                    item.status === "cancelled"
-                                                      ? translations.downloadCancelledBill
-                                                      : translations.downloadBill
-                                                  }
+                                                  title={item.status === "cancelled" ? translations.downloadCancelledBill : translations.downloadBill}
                                                 >
                                                   <FaDownload className="me-1" />
                                                   {translations.download}
                                                 </Button>
                                               ) : (
-                                                <Badge
-                                                  bg="secondary"
-                                                  className="small-fonts"
-                                                  title="PDF path not found in API response"
-                                                >
+                                                <Badge bg="secondary" className="small-fonts" title="PDF path not found in API response">
                                                   {translations.noPdfAvailable}
                                                 </Badge>
                                               )}
@@ -1849,9 +1495,7 @@ const AllBills = () => {
                                               <Button
                                                 variant="outline-warning"
                                                 size="sm"
-                                                onClick={() =>
-                                                  openEditModal(item)
-                                                }
+                                                onClick={() => openEditModal(item)}
                                                 className="small-fonts"
                                                 title={translations.edit}
                                               >
@@ -1862,23 +1506,12 @@ const AllBills = () => {
                                                 <Button
                                                   variant="outline-danger"
                                                   size="sm"
-                                                  onClick={() =>
-                                                    confirmCancelReport(
-                                                      item.id,
-                                                      item.bill_report_id
-                                                    )
-                                                  }
+                                                  onClick={() => confirmCancelReport(item.id, item.bill_report_id)}
                                                   className="small-fonts"
-                                                  disabled={
-                                                    updatingStatus === item.id
-                                                  }
-                                                  title={
-                                                    translations.cancelReport
-                                                  }
+                                                  disabled={updatingStatus === item.id}
+                                                  title={translations.cancelReport}
                                                 >
-                                                  {updatingStatus === item.id
-                                                    ? "..."
-                                                    : translations.cancel}
+                                                  {updatingStatus === item.id ? "..." : translations.cancel}
                                                 </Button>
                                               )}
                                             </div>
@@ -1886,31 +1519,16 @@ const AllBills = () => {
                                         </tr>
 
                                         <tr>
-                                          <td
-                                            colSpan={9}
-                                            className="p-0"
-                                            style={{
-                                              borderBottom: isExpanded
-                                                ? "1px solid #dee2e6"
-                                                : "none",
-                                            }}
-                                          >
+                                          <td colSpan={9} className="p-0" style={{ borderBottom: isExpanded ? "1px solid #dee2e6" : "none" }}>
                                             <Collapse in={isExpanded}>
                                               <div className="p-3 bg-light">
                                                 <Row className="mb-2 align-items-center">
-                                                  <Col
-                                                    md={6}
-                                                    className="small-fonts"
-                                                  >
+                                                  <Col md={6} className="small-fonts">
                                                     <strong>
-                                                      {item.center_name} —{" "}
-                                                      {item.bill_report_id}
+                                                      {item.center_name} — {item.bill_report_id}
                                                     </strong>
                                                   </Col>
-                                                  <Col
-                                                    md={6}
-                                                    className="text-end"
-                                                  >
+                                                  <Col md={6} className="text-end">
                                                     <Button
                                                       variant="outline-success"
                                                       size="sm"
@@ -1947,152 +1565,35 @@ const AllBills = () => {
                                                   <table className="table table-bordered table-sm small-fonts mb-0">
                                                     <thead className="table-light">
                                                       <tr>
-                                                        <th>
-                                                          {
-                                                            translations.reportId
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {translations.nivesh}
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.subniveshName
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {translations.unit}
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.allocatedQuantity
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {translations.rate}
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.updatedQuantity
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.quantityLeft
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.allotedRashi
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.soldRashi
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.cutQuantity
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.totalBill
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.buyAmount
-                                                          }
-                                                        </th>
-                                                        <th>
-                                                          {
-                                                            translations.billingDate
-                                                          }
-                                                        </th>
+                                                        <th>{translations.reportId}</th>
+                                                        <th>{translations.nivesh}</th>
+                                                        <th>{translations.subniveshName}</th>
+                                                        <th>{translations.schemeName}</th>
+                                                        <th>{translations.sourceOfReceipt}</th>
+                                                        <th>{translations.unit}</th>
+                                                        <th>{translations.allocatedQuantity}</th>
+                                                        <th>{translations.rate}</th>
+                                                        <th>{translations.updatedQuantity}</th>
+                                                        <th>{translations.allotedRashi}</th>
+                                                        <th>{translations.soldRashi}</th>
                                                       </tr>
                                                     </thead>
                                                     <tbody>
-                                                      {item.component_data?.map(
-                                                        (comp, compIdx) => (
-                                                          <tr key={compIdx}>
-                                                            <td>
-                                                              {
-                                                                item.bill_report_id
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {
-                                                                comp.investment_name
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {
-                                                                comp.sub_investment_name
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {comp.unit}
-                                                            </td>
-                                                            <td>
-                                                              {
-                                                                comp.allocated_quantity
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {comp.rate}
-                                                            </td>
-                                                            <td>
-                                                              {
-                                                                comp.updated_quantity
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {calculateQuantityLeft(
-                                                                comp.allocated_quantity,
-                                                                comp.updated_quantity,
-                                                                comp.cut_quantity
-                                                              )}
-                                                            </td>
-                                                            <td>
-                                                              {calculateAllocatedAmount(
-                                                                comp.allocated_quantity,
-                                                                comp.rate
-                                                              )}
-                                                            </td>
-                                                            <td>
-                                                              {calculateAmount(
-                                                                comp.updated_quantity,
-                                                                comp.rate
-                                                              )}
-                                                            </td>
-                                                            <td>
-                                                              {
-                                                                comp.cut_quantity
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {calculateTotalBill(
-                                                                comp.cut_quantity,
-                                                                comp.rate
-                                                              )}
-                                                            </td>
-                                                            <td>
-                                                              {
-                                                                comp.sold_amount
-                                                              }
-                                                            </td>
-                                                            <td>
-                                                              {comp.billing_date
-                                                                ? formatDate(
-                                                                    comp.billing_date
-                                                                  )
-                                                                : "N/A"}
-                                                            </td>
-                                                          </tr>
-                                                        )
-                                                      )}
+                                                      {item.component_data?.map((comp, compIdx) => (
+                                                        <tr key={compIdx}>
+                                                          <td>{item.bill_report_id}</td>
+                                                          <td>{comp.investment_name}</td>
+                                                          <td>{comp.sub_investment_name}</td>
+                                                          <td>{comp.scheme_name}</td>
+                                                          <td>{comp.source_of_receipt}</td>
+                                                          <td>{comp.unit}</td>
+                                                          <td>{comp.allocated_quantity}</td>
+                                                          <td>{comp.rate}</td>
+                                                          <td>{comp.updated_quantity}</td>
+                                                          <td>{comp.buy_amount}</td>
+                                                          <td>{comp.sold_amount}</td>
+                                                        </tr>
+                                                      ))}
                                                     </tbody>
                                                   </table>
                                                 </div>
@@ -2112,16 +1613,12 @@ const AllBills = () => {
                                 <Pagination>
                                   <Pagination.Prev
                                     disabled={currentPage === 1}
-                                    onClick={() =>
-                                      handlePageChange(currentPage - 1)
-                                    }
+                                    onClick={() => handlePageChange(currentPage - 1)}
                                   />
                                   {paginationItems}
                                   <Pagination.Next
                                     disabled={currentPage === totalPages}
-                                    onClick={() =>
-                                      handlePageChange(currentPage + 1)
-                                    }
+                                    onClick={() => handlePageChange(currentPage + 1)}
                                   />
                                 </Pagination>
                               </div>
@@ -2129,9 +1626,7 @@ const AllBills = () => {
                           </>
                         ) : (
                           <div className="text-center py-5">
-                            <p className="text-muted">
-                              {translations.noMatchingReports}
-                            </p>
+                            <p className="text-muted">{translations.noMatchingReports}</p>
                           </div>
                         )}
                       </div>
@@ -2144,41 +1639,173 @@ const AllBills = () => {
         </Container>
       </div>
 
-      {/* ─── Cancel Confirmation Modal ─── */}
+      {/* ─── View Pages Modal ─── */}
+      <style>{`
+        .page-details-modal .modal-content {
+          border: none;
+          border-radius: 16px;
+          overflow: hidden;
+          box-shadow: 0 12px 35px rgba(0, 0, 0, 0.25);
+          background: #ffffff;
+        }
+
+        .page-details-modal .modal-header {
+          background: #0b3d62;
+          color: #ffffff;
+          border-bottom: 0;
+          padding: 12px 18px;
+        }
+
+        .page-details-modal .modal-title {
+          color: #ffffff !important;
+          font-weight: 600;
+          font-size: 16px;
+          line-height: 1.4;
+        }
+
+        .page-details-modal .btn-close {
+          filter: invert(1) grayscale(100%) brightness(200%);
+          opacity: 1;
+          width: 14px;
+          height: 14px;
+        }
+
+        .page-details-modal .modal-body {
+          background: #ffffff;
+          padding: 18px !important;
+          overflow: visible !important;
+          max-height: none !important;
+        }
+
+        .page-details-modal .page-details-table {
+          width: 100%;
+          margin: 0;
+          border-collapse: separate;
+          border-spacing: 0;
+          table-layout: fixed;
+          overflow: visible;
+        }
+
+        .page-details-modal .page-details-table thead th {
+          background: #0b3d62 !important;
+          color: #ffffff !important;
+          border-color: #0b3d62 !important;
+          font-weight: 600;
+          padding: 10px 12px;
+          vertical-align: middle;
+        }
+
+        .page-details-modal .page-details-table tbody td {
+          background: #ffffff;
+          color: #1f2937;
+          border-color: #d7dee7;
+          padding: 9px 12px;
+          vertical-align: middle;
+        }
+
+        .page-details-modal .page-details-table tbody tr:nth-child(even) td {
+          background: #f5f8fb;
+        }
+
+        .page-details-modal .page-details-table tbody td.page-number-cell {
+          color: #0b3d62;
+          font-weight: 700;
+          font-size: 15px;
+        }
+
+        .page-details-modal .modal-footer {
+          background: #f3f6f9;
+          border-top: 1px solid #d7dee7;
+          padding: 10px 18px;
+        }
+
+        .page-details-modal .modal-footer .btn-secondary {
+          background: #0b3d62;
+          border-color: #0b3d62;
+          color: #ffffff;
+          font-weight: 500;
+        }
+
+        .page-details-modal .modal-footer .btn-secondary:hover {
+          background: #082f4c;
+          border-color: #082f4c;
+        }
+      `}</style>
+
       <Modal
-        show={showConfirmDialog}
-        onHide={cancelConfirmation}
+        show={showPageModal}
+        onHide={() => setShowPageModal(false)}
         centered
-        size="sm"
+        size="lg"
+        dialogClassName="page-details-modal"
+        backdrop="static"
       >
         <Modal.Header closeButton>
-          <Modal.Title className="small-fonts">
-            {translations.cancelReport}
-          </Modal.Title>
+          <Modal.Title className="small-fonts">{translations.pageDetails}</Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body>
+          {currentPageData.length === 0 ? (
+            <p className="text-center small-fonts mb-0">{translations.noPageData}</p>
+          ) : (
+            <Table
+              striped
+              bordered
+              hover
+              size="sm"
+              className="small-fonts page-details-table"
+            >
+              <thead>
+                <tr>
+                  <th style={{ width: "70%" }}>{translations.subniveshName}</th>
+                  <th
+                    className="text-center"
+                    style={{ width: "30%", whiteSpace: "nowrap" }}
+                  >
+                    {translations.pageNo}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentPageData.map((entry, index) => (
+                  <tr key={index}>
+                    <td style={{ wordBreak: "break-word", whiteSpace: "normal" }}>
+                      {entry.names.join(", ")}
+                    </td>
+                    <td
+                      className="text-center page-number-cell"
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      {entry.pageNo}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          )}
+        </Modal.Body>
+
+        <Modal.Footer>
+          <Button variant="secondary" size="sm" onClick={() => setShowPageModal(false)}>
+            {translations.closeBtn}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ─── Cancel Confirmation Modal ─── */}
+      <Modal show={showConfirmDialog} onHide={cancelConfirmation} centered size="sm">
+        <Modal.Header closeButton>
+          <Modal.Title className="small-fonts">{translations.cancelReport}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="small-fonts">
           <p>{translations.confirmCancel}</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={cancelConfirmation}
-            disabled={updatingStatus !== null}
-          >
+          <Button variant="secondary" size="sm" onClick={cancelConfirmation} disabled={updatingStatus !== null}>
             {translations.no}
           </Button>
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={handleStatusUpdate}
-            disabled={updatingStatus !== null}
-          >
-            {updatingStatus !== null ? (
-              <Spinner animation="border" size="sm" />
-            ) : (
-              translations.yes
-            )}
+          <Button variant="danger" size="sm" onClick={handleStatusUpdate} disabled={updatingStatus !== null}>
+            {updatingStatus !== null ? <Spinner animation="border" size="sm" /> : translations.yes}
           </Button>
         </Modal.Footer>
       </Modal>
@@ -2186,17 +1813,11 @@ const AllBills = () => {
       {/* ─── Edit Bill Modal ─── */}
       <Modal show={showEditModal} onHide={closeEditModal} centered size="lg">
         <Modal.Header closeButton>
-          <Modal.Title className="small-fonts">
-            {translations.editBillDetails}
-          </Modal.Title>
+          <Modal.Title className="small-fonts">{translations.editBillDetails}</Modal.Title>
         </Modal.Header>
         <Modal.Body className="small-fonts">
           {editError && (
-            <Alert
-              variant="danger"
-              dismissible
-              onClose={() => setEditError(null)}
-            >
+            <Alert variant="danger" dismissible onClose={() => setEditError(null)}>
               {editError}
             </Alert>
           )}
@@ -2219,24 +1840,14 @@ const AllBills = () => {
                   type="checkbox"
                   label={translations.changeBillNumber}
                   checked={editData.changeNewBillNumber}
-                  onChange={(e) =>
-                    handleEditDataChange(
-                      "changeNewBillNumber",
-                      e.target.checked
-                    )
-                  }
+                  onChange={(e) => handleEditDataChange("changeNewBillNumber", e.target.checked)}
                   className="mb-2 small-fonts"
                 />
                 {editData.changeNewBillNumber && (
                   <Form.Control
                     type="text"
                     value={editData.new_bill_report_id}
-                    onChange={(e) =>
-                      handleEditDataChange(
-                        "new_bill_report_id",
-                        e.target.value
-                      )
-                    }
+                    onChange={(e) => handleEditDataChange("new_bill_report_id", e.target.value)}
                     className="small-fonts"
                     placeholder={translations.newBillNumber}
                   />
@@ -2252,9 +1863,7 @@ const AllBills = () => {
                 <Form.Control
                   type="date"
                   value={editData.billing_date}
-                  onChange={(e) =>
-                    handleEditDataChange("billing_date", e.target.value)
-                  }
+                  onChange={(e) => handleEditDataChange("billing_date", e.target.value)}
                   className="small-fonts"
                 />
               </FormGroup>
@@ -2284,12 +1893,7 @@ const AllBills = () => {
                       <Form.Control
                         type="number"
                         value={bill.updated_quantity}
-                        onChange={(e) =>
-                          handleBillQuantityChange(
-                            bill.bill_id,
-                            e.target.value
-                          )
-                        }
+                        onChange={(e) => handleBillQuantityChange(bill.bill_id, e.target.value)}
                         className="small-fonts"
                         min="0"
                         max={bill.allocated_quantity}
@@ -2302,20 +1906,10 @@ const AllBills = () => {
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={closeEditModal}
-            disabled={editingStatus}
-          >
+          <Button variant="secondary" size="sm" onClick={closeEditModal} disabled={editingStatus}>
             {translations.cancel}
           </Button>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={handleSubmitEdit}
-            disabled={editingStatus}
-          >
+          <Button variant="primary" size="sm" onClick={handleSubmitEdit} disabled={editingStatus}>
             {editingStatus ? (
               <>
                 <Spinner animation="border" size="sm" className="me-1" />
@@ -2329,12 +1923,7 @@ const AllBills = () => {
       </Modal>
 
       {/* ─── Success Modal ─── */}
-      <Modal
-        show={showSuccessModal}
-        onHide={() => setShowSuccessModal(false)}
-        centered
-        size="sm"
-      >
+      <Modal show={showSuccessModal} onHide={() => setShowSuccessModal(false)} centered size="sm">
         <Modal.Header closeButton>
           <Modal.Title className="small-fonts text-success">
             ✓ {translations.updateSuccess}
@@ -2344,11 +1933,7 @@ const AllBills = () => {
           <p>{translations.updateSuccess}</p>
         </Modal.Body>
         <Modal.Footer>
-          <Button
-            variant="primary"
-            size="sm"
-            onClick={() => setShowSuccessModal(false)}
-          >
+          <Button variant="primary" size="sm" onClick={() => setShowSuccessModal(false)}>
             {translations.save}
           </Button>
         </Modal.Footer>

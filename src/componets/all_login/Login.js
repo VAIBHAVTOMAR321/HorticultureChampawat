@@ -13,7 +13,14 @@ export default function Login() {
 
   // Kenra names for demand generate login
   const kenraNames = [
-   "बस्तिया",
+    "कोटद्वार",
+    "किनगोड़िखाल",
+    "चौखाल",
+    "धुमाकोट",
+    "बीरोंखाल",
+    "हल्दूखाल",
+    "किल्वोंखाल",
+    "बस्तिया",
   "सूखीढांग",
   "चम्पावत",
   "मंच",
@@ -68,7 +75,7 @@ export default function Login() {
           navigate('/NurseryPhysicalEntry', { replace: true });
         } else {
           // Default to Dashboard for admin users
-          navigate('/Dashboard', { replace: true });
+          navigate('/MonthReport', { replace: true });
         }
       }, 1500); // 1.5 second delay
 
@@ -111,7 +118,7 @@ export default function Login() {
     const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.identifier);
     
     try {
-      const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/login/", {
+      const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -204,7 +211,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/login/", {
+      const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -269,7 +276,7 @@ export default function Login() {
     setIsLoading(true);
     
     try {
-      const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/login/", {
+      const response = await fetch("https://mahadevaaya.com/govbillingsystem/backend/api/login/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
