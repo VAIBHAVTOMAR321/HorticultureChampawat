@@ -923,7 +923,7 @@ function AdminMonthAttendance() {
               <h1 className="home-title">मासिक उपस्थिति प्रबंधन</h1>
 
               <p className="home-subtitle">
-                Champawat Champawat उद्यान विभाग डिजिटल प्लेटफॉर्म में आपका
+                Champawat उद्यान विभाग डिजिटल प्लेटफॉर्म में आपका
                 स्वागत है
               </p>
             </div>
