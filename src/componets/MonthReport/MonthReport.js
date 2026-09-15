@@ -12,7 +12,7 @@ const API_URL =
   Example:
     /api/month-reports/8/file/
 */
-const MEDIA_BASE_URL ="https://mahadevaaya.com/govbillingsystem/backend";
+const MEDIA_BASE_URL ="https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 const months = [

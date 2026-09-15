@@ -16,7 +16,7 @@ import { useAuth } from "../context/AuthContext";
 import { RiAddLine } from "react-icons/ri";
 import DemandNavigation from "./DemandNavigation";
 
-const API_BASE = "https://mahadevaaya.com/govbillingsystem/backend/api";
+const API_BASE = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api";
 
 const DemandGenerate = () => {
   const navigate = useNavigate();

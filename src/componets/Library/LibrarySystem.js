@@ -30,7 +30,7 @@ import "./LibrarySystem.css";
 
 const API_BASE_URL =
   "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/library";
-const MEDIA_BASE_URL = "https://mahadevaaya.com/govbillingsystem/backend";
+const MEDIA_BASE_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
 
 // Kendra / center-links APIs
 const CENTER_LINKS_API_URL =

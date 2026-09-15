@@ -305,7 +305,7 @@ function MonthAttendance() {
   const getFileUrl = (filePath) => {
     if (!filePath) return "#";
     if (filePath.startsWith("http")) return filePath;
-    return `https://mahadevaaya.com/govbillingsystem/backend/${filePath}`;
+    return `https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/${filePath}`;
   };
 
   return (

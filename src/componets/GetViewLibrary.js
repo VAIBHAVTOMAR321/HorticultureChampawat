@@ -29,7 +29,7 @@ const CENTER_LINKS_API_URL =
   "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-links";
 const DETAILS_API_URL =
   "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-link-details-bycenter";
-const MEDIA_BASE_URL = "https://mahadevaaya.com/govbillingsystem/backend";
+const MEDIA_BASE_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
 
 const getToken = () =>
   localStorage.getItem("access_token") || localStorage.getItem("token");

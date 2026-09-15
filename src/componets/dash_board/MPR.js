@@ -1086,7 +1086,7 @@ const downloadExcel = (data, filename, columnMapping, selectedColumns, includeTo
   // View receipt file
   const viewReceipt = (receiptPath) => {
     if (receiptPath) {
-      const fullUrl = `https://mahadevaaya.com/govbillingsystem/backend${receiptPath}`;
+      const fullUrl = `https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/${receiptPath}`;
       window.open(fullUrl, '_blank');
     }
   };
