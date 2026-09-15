@@ -31,7 +31,7 @@ function DashBoardHeader() {
         <Navbar.Brand as={Link} to="/Dashboard">
           <div className="dash-img d-flex justify-content-between mx-2">
             <img src={UKSasan} className="img-fluid" alt="UK Sasan" />
-            <p>DHO Kotdwar</p>
+            <p>Champawat</p>
           </div>
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
@@ -73,14 +73,7 @@ function DashBoardHeader() {
               <NavDropdown.Item as={Link} to="/KishanBeej">किसान बीज</NavDropdown.Item>
             </NavDropdown>
 
-            <NavDropdown 
-              title="बिल" 
-              id="bill-nav-dropdown" 
-              active={billRoutes.includes(location.pathname)}
-            >
-              <NavDropdown.Item as={Link} to="/Billing">Billing</NavDropdown.Item>
-              <NavDropdown.Item as={Link} to="/AllBills">AllBills</NavDropdown.Item>
-            </NavDropdown>
+            
 
             <NavDropdown 
               title="डिमांड" 

@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-
+import React, { useState } from "react";
 
 const centres = [
   "किनगोड़ीखाल",
@@ -23,13 +22,13 @@ const centres = [
   "चेलूसैण",
   "सिलोगी",
   "सतपुली",
-  "कोटद्वार",
+  "Champawat",
   "दुगड्डा",
   "पौखाल",
 ];
 
 const varietiesByCentre = {
-  "किनगोड़ीखाल": [
+  किनगोड़ीखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -37,7 +36,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "धुमाकोट": [
+  धुमाकोट: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -45,7 +44,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "हल्दूखाल": [
+  हल्दूखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -53,7 +52,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "किल्वोखाल": [
+  किल्वोखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -61,7 +60,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "देवियोखाल": [
+  देवियोखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -69,7 +68,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "जेठागांव": [
+  जेठागांव: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -77,7 +76,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "बीरोंखाल": [
+  बीरोंखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -85,7 +84,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "वेदीखाल": [
+  वेदीखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -93,7 +92,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "चौखाल": [
+  चौखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -101,7 +100,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "जयहरीखाल": [
+  जयहरीखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -109,7 +108,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "सिसल्ड़ी": [
+  सिसल्ड़ी: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -117,7 +116,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "सेंधीखाल": [
+  सेंधीखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -125,7 +124,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "संगलाकोटी": [
+  संगलाकोटी: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -133,7 +132,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "देवराजखाल": [
+  देवराजखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -141,7 +140,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "पोखड़ा": [
+  पोखड़ा: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -149,7 +148,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "विथ्याणी": [
+  विथ्याणी: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -157,7 +156,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "दिउली": [
+  दिउली: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -165,7 +164,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "गंगाभोगपुर": [
+  गंगाभोगपुर: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -173,7 +172,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "चेलूसैण": [
+  चेलूसैण: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -181,7 +180,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "सिलोगी": [
+  सिलोगी: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -189,7 +188,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "सतपुली": [
+  सतपुली: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -197,7 +196,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "कोटद्वार": [
+  Champawat: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -205,7 +204,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "दुगड्डा": [
+  दुगड्डा: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -213,7 +212,7 @@ const varietiesByCentre = {
     "बंदगोभी Bajwa60",
     "फूलगोभी AZCL-900",
   ],
-  "पौखाल": [
+  पौखाल: [
     "ब्रोकली Rock 001",
     "बैंगन BSHB-33 (Navin)",
     "टमाटर Sindhu",
@@ -224,16 +223,16 @@ const varietiesByCentre = {
 };
 
 const SeedFarmers = () => {
-  const [activeTab, setActiveTab] = useState('home');
-  const [selectedCentre, setSelectedCentre] = useState('');
-  const [selectedVariety, setSelectedVariety] = useState('');
+  const [activeTab, setActiveTab] = useState("home");
+  const [selectedCentre, setSelectedCentre] = useState("");
+  const [selectedVariety, setSelectedVariety] = useState("");
 
   const tabs = [
-    { id: 'home', label: 'होम' },
-    { id: 'distribution', label: '✍️ वितरण' },
-    { id: 'stock', label: '📦 स्टॉक' },
-    { id: 'standard', label: '⚙️ मानक' },
-    { id: 'report', label: '📊 रिपोर्ट' },
+    { id: "home", label: "होम" },
+    { id: "distribution", label: "✍️ वितरण" },
+    { id: "stock", label: "📦 स्टॉक" },
+    { id: "standard", label: "⚙️ मानक" },
+    { id: "report", label: "📊 रिपोर्ट" },
   ];
 
   const availableVarieties = selectedCentre
@@ -261,7 +260,7 @@ const SeedFarmers = () => {
         {tabs.map((tab) => (
           <div
             key={tab.id}
-            className={`tab ${activeTab === tab.id ? 'active' : ''}`}
+            className={`tab ${activeTab === tab.id ? "active" : ""}`}
             onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
@@ -271,12 +270,14 @@ const SeedFarmers = () => {
 
       {/* Main Container */}
       <div className="container">
-        
         {/* Home Tab */}
-        {activeTab === 'home' && (
+        {activeTab === "home" && (
           <div className="tab-content active">
             <div className="page-title">एक नज़र में स्थिति</div>
-            <p className="subtext">नीचे पूरी योजना की जीवंत स्थिति है। कोई भी संख्या लाल दिखे तो उसी टैब में जाकर जाँच करें।</p>
+            <p className="subtext">
+              नीचे पूरी योजना की जीवंत स्थिति है। कोई भी संख्या लाल दिखे तो उसी
+              टैब में जाकर जाँच करें।
+            </p>
 
             <div className="summary-grid">
               <div className="summary-card green">
@@ -306,48 +307,76 @@ const SeedFarmers = () => {
               <ul className="check-list">
                 <li>✔ किसी भी केन्द्र में स्टॉक से अधिक वितरण नहीं हुआ।</li>
                 <li>✔ सभी प्रविष्टियों में दोनों हस्ताक्षर पूर्ण हैं।</li>
-                <li>✔ सभी 10 किस्मों का मानक ₹60,000/हे0 से पूरा मेल खाता है।</li>
-                <li>✔ किसी किस्म का आवंटन उसकी खरीदी मात्रा से अधिक नहीं है।</li>
-                <li>✔ कुल राजसहायता ₹0.00 + कृषक अंश ₹0.00 = कुल परियोजना निवेश ₹0.00 — मिलान सही।</li>
+                <li>
+                  ✔ सभी 10 किस्मों का मानक ₹60,000/हे0 से पूरा मेल खाता है।
+                </li>
+                <li>
+                  ✔ किसी किस्म का आवंटन उसकी खरीदी मात्रा से अधिक नहीं है।
+                </li>
+                <li>
+                  ✔ कुल राजसहायता ₹0.00 + कृषक अंश ₹0.00 = कुल परियोजना निवेश
+                  ₹0.00 — मिलान सही।
+                </li>
               </ul>
             </div>
 
             <div className="info-box">
               <h3>काम का क्रम — बस इतना ही</h3>
               <ol>
-                <li><strong>मानक टैब</strong> — एक बार जाँच लें कि हर किस्म का कुल ₹60,000/हे0 (राजसहायता ₹30,000 + कृषक अंश ₹30,000) से मेल खाता है। सब हरा है तो कुछ करने की ज़रूरत नहीं।</li>
-                <li><strong>स्टॉक टैब</strong> — बीज की खरीद और केन्द्रों को आवंटन यहीं दर्ज होता है। दोनों पहले से भरे हुए हैं; नई खरीद/आवंटन आने पर ही छूएँ।</li>
-                <li><strong>वितरण टैब</strong> — रोज़ का असली काम। केन्द्र, किस्म, किसान का नाम और क्षेत्रफल भरें — बाक़ी सब अपने आप।</li>
-                <li><strong>रिपोर्ट टैब</strong> — छपाई व CSV। छपी प्रति पर हस्ताक्षर करवाकर फाइल में लगाएँ।</li>
+                <li>
+                  <strong>मानक टैब</strong> — एक बार जाँच लें कि हर किस्म का कुल
+                  ₹60,000/हे0 (राजसहायता ₹30,000 + कृषक अंश ₹30,000) से मेल खाता
+                  है। सब हरा है तो कुछ करने की ज़रूरत नहीं।
+                </li>
+                <li>
+                  <strong>स्टॉक टैब</strong> — बीज की खरीद और केन्द्रों को आवंटन
+                  यहीं दर्ज होता है। दोनों पहले से भरे हुए हैं; नई खरीद/आवंटन
+                  आने पर ही छूएँ।
+                </li>
+                <li>
+                  <strong>वितरण टैब</strong> — रोज़ का असली काम। केन्द्र, किस्म,
+                  किसान का नाम और क्षेत्रफल भरें — बाक़ी सब अपने आप।
+                </li>
+                <li>
+                  <strong>रिपोर्ट टैब</strong> — छपाई व CSV। छपी प्रति पर
+                  हस्ताक्षर करवाकर फाइल में लगाएँ।
+                </li>
               </ol>
             </div>
           </div>
         )}
 
         {/* Distribution Tab */}
-        {activeTab === 'distribution' && (
+        {activeTab === "distribution" && (
           <div className="tab-content active">
             <div className="page-title">✍️ वितरण — किसान को बीज वितरण</div>
-            <p className="subtext">केवल केन्द्र, किस्म, किसान का नाम और क्षेत्रफल भरना है — बीज की मात्रा, चारों मद और राशि अपने आप निकल आएँगी।</p>
+            <p className="subtext">
+              केवल केन्द्र, किस्म, किसान का नाम और क्षेत्रफल भरना है — बीज की
+              मात्रा, चारों मद और राशि अपने आप निकल आएँगी।
+            </p>
 
             {/* New Entry Form */}
             <div className="info-box form-section">
               <h3>नई प्रविष्टि</h3>
               <div className="form-grid four-col">
                 <div className="form-group">
-                  <label>दिनांक <span className="required">*</span></label>
+                  <label>
+                    दिनांक <span className="required">*</span>
+                  </label>
                   <input type="text" defaultValue="04-09-2026" />
                 </div>
 
                 <div className="form-group">
-                  <label>उ0स0द0 केन्द्र <span className="required">*</span></label>
+                  <label>
+                    उ0स0द0 केन्द्र <span className="required">*</span>
+                  </label>
                   <select
                     id="f-centre"
                     className="need"
                     value={selectedCentre}
                     onChange={(e) => {
                       setSelectedCentre(e.target.value);
-                      setSelectedVariety('');
+                      setSelectedVariety("");
                     }}
                   >
                     <option value="">— केन्द्र चुनें —</option>
@@ -360,7 +389,9 @@ const SeedFarmers = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>किस्म <span className="required">*</span></label>
+                  <label>
+                    किस्म <span className="required">*</span>
+                  </label>
                   <select
                     id="f-variety"
                     className="need"
@@ -378,12 +409,16 @@ const SeedFarmers = () => {
                 </div>
 
                 <div className="form-group">
-                  <label>क्षेत्रफल (है0) <span className="required">*</span></label>
+                  <label>
+                    क्षेत्रफल (है0) <span className="required">*</span>
+                  </label>
                   <input type="text" placeholder="जैसे 0.200" />
                 </div>
 
                 <div className="form-group">
-                  <label>कृषक का नाम <span className="required">*</span></label>
+                  <label>
+                    कृषक का नाम <span className="required">*</span>
+                  </label>
                   <input type="text" placeholder="श्री ..." />
                 </div>
 
@@ -412,10 +447,13 @@ const SeedFarmers = () => {
                   <input type="text" defaultValue="नहीं लिया" />
                 </div>
               </div>
-               
+
               <div className="form-group full-width">
                 <label>टिप्पणी</label>
-                <textarea readOnly placeholder="क्षेत्रफल भरते ही यहाँ पूरी गणना और केन्द्र का शेष स्टॉक दिखेगा।"></textarea>
+                <textarea
+                  readOnly
+                  placeholder="क्षेत्रफल भरते ही यहाँ पूरी गणना और केन्द्र का शेष स्टॉक दिखेगा।"
+                ></textarea>
               </div>
 
               <div className="actions">
@@ -430,11 +468,15 @@ const SeedFarmers = () => {
               <div className="filter-bar">
                 <div className="filter-group">
                   <label>केन्द्र से छाँटें</label>
-                  <select><option>सभी केन्द्र</option></select>
+                  <select>
+                    <option>सभी केन्द्र</option>
+                  </select>
                 </div>
                 <div className="filter-group">
                   <label>किस्म से छाँटें</label>
-                  <select><option>सभी किस्में</option></select>
+                  <select>
+                    <option>सभी किस्में</option>
+                  </select>
                 </div>
                 <div className="filter-group">
                   <label>नाम/ग्राम से खोजें</label>
@@ -460,7 +502,14 @@ const SeedFarmers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td colSpan="6" style={{textAlign: 'center', color: '#94a3b8'}}>अभी तक कोई वितरण प्रविष्टि नहीं है।</td></tr>
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{ textAlign: "center", color: "#94a3b8" }}
+                    >
+                      अभी तक कोई वितरण प्रविष्टि नहीं है।
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -468,7 +517,7 @@ const SeedFarmers = () => {
         )}
 
         {/* Stock Tab */}
-        {activeTab === 'stock' && (
+        {activeTab === "stock" && (
           <div className="tab-content active">
             <div className="page-title">स्टॉक एवं आवंटन विवरण</div>
             <div className="actions">
@@ -500,12 +549,15 @@ const SeedFarmers = () => {
         )}
 
         {/* Standard Tab */}
-        {activeTab === 'standard' && (
+        {activeTab === "standard" && (
           <div className="tab-content active">
             <div className="page-title">मानक एवं वित्तीय अनुपालन</div>
             <div className="info-box">
               <h3>मानक जाँच प्रणाली</h3>
-              <p>हर किस्म का कुल मानक ₹60,000/हे0 (राजसहायता ₹30,000 + कृषक अंश ₹30,000) से पूरा मेल खाता है।</p>
+              <p>
+                हर किस्म का कुल मानक ₹60,000/हे0 (राजसहायता ₹30,000 + कृषक अंश
+                ₹30,000) से पूरा मेल खाता है।
+              </p>
               <table>
                 <thead>
                   <tr>
@@ -517,7 +569,15 @@ const SeedFarmers = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>1 से 10 (सभी किस्में)</td><td>60,000</td><td>30,000</td><td>30,000</td><td><span className="badge paid">मानक पूर्ण</span></td></tr>
+                  <tr>
+                    <td>1 से 10 (सभी किस्में)</td>
+                    <td>60,000</td>
+                    <td>30,000</td>
+                    <td>30,000</td>
+                    <td>
+                      <span className="badge paid">मानक पूर्ण</span>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -525,7 +585,7 @@ const SeedFarmers = () => {
         )}
 
         {/* Report Tab */}
-        {activeTab === 'report' && (
+        {activeTab === "report" && (
           <div className="tab-content active">
             <div className="page-title">रिपोर्ट एवं प्रिंट</div>
             <div className="actions">
@@ -534,7 +594,11 @@ const SeedFarmers = () => {
             </div>
             <div className="info-box">
               <h3>निर्यात विकल्प</h3>
-              <p>यहाँ से आप छपाई हेतु प्रति डाउनलोड कर सकते हैं और CSV फ़ाइल निर्यात कर सकते हैं। छपी प्रति पर हस्ताक्षर करवाकर फाइल में लगाएँ।</p>
+              <p>
+                यहाँ से आप छपाई हेतु प्रति डाउनलोड कर सकते हैं और CSV फ़ाइल
+                निर्यात कर सकते हैं। छपी प्रति पर हस्ताक्षर करवाकर फाइल में
+                लगाएँ।
+              </p>
             </div>
           </div>
         )}
