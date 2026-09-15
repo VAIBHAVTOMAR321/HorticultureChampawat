@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./UdyanBill.css";
 import { useAuth } from "../../context/AuthContext";
 
-const API_BASE = "https://mahadevaaya.com/govbillingsystem/backend/api/udyan";
+const API_BASE = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/udyan";
 
 /* =========================================================
     API HELPERS
