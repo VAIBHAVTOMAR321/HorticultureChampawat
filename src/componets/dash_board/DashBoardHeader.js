@@ -53,11 +53,13 @@ function DashBoardHeader() {
             </Nav.Link>
 
           
-
+ <Nav.Link as={NavLink} to="/MainDashboard">
+              डैशबोर्ड
+            </Nav.Link>
            
 
-            <Nav.Link as={NavLink} to="/MainDashboard">
-              डैशबोर्ड
+            <Nav.Link as={NavLink} to="/AdminKishanAavedan">
+           किसान आवेदन
             </Nav.Link>
 
             <NavDropdown 
