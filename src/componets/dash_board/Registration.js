@@ -717,70 +717,67 @@ const Registration = () => {
     fetchCenterOptions();
   }, []);
 
-  // Populate filter options from all billing items
+  // Populate filter options from currently filtered items
   useEffect(() => {
-    if (allBillingItems.length > 0) {
-      setFilterOptions({
-        center_name: [
-          ...new Set(
-            allBillingItems.map((item) => item.center_name).filter(Boolean),
-          ),
-        ],
-        investment_name: [
-          ...new Set(
-            allBillingItems.map((item) => item.investment_name).filter(Boolean),
-          ),
-        ],
-        sub_investment_name: [
-          ...new Set(
-            allBillingItems
-              .map((item) => item.sub_investment_name)
-              .filter(Boolean),
-          ),
-        ],
-        unit: [
-          ...new Set(allBillingItems.map((item) => item.unit).filter(Boolean)),
-        ],
-        source_of_receipt: [
-          ...new Set(
-            allBillingItems
-              .map((item) => item.source_of_receipt)
-              .filter(Boolean),
-          ),
-        ],
-        scheme_name: [
-          ...new Set(
-            allBillingItems.map((item) => item.scheme_name).filter(Boolean),
-          ),
-        ],
-        vikas_khand_name: [
-          ...new Set(
-            allBillingItems
-              .map((item) => item.vikas_khand_name)
-              .filter(Boolean),
-          ),
-        ],
-        vidhan_sabha_name: [
-          ...new Set(
-            allBillingItems
-              .map((item) => item.vidhan_sabha_name)
-              .filter(Boolean),
-          ),
-        ],
-      });
+    setFilterOptions({
+      center_name: [
+        ...new Set(
+          billingItems.map((item) => item.center_name).filter(Boolean),
+        ),
+      ],
+      investment_name: [
+        ...new Set(
+          billingItems.map((item) => item.investment_name).filter(Boolean),
+        ),
+      ],
+      sub_investment_name: [
+        ...new Set(
+          billingItems
+            .map((item) => item.sub_investment_name)
+            .filter(Boolean),
+        ),
+      ],
+      unit: [
+        ...new Set(billingItems.map((item) => item.unit).filter(Boolean)),
+      ],
+      source_of_receipt: [
+        ...new Set(
+          billingItems
+            .map((item) => item.source_of_receipt)
+            .filter(Boolean),
+        ),
+      ],
+      scheme_name: [
+        ...new Set(
+          billingItems.map((item) => item.scheme_name).filter(Boolean),
+        ),
+      ],
+      vikas_khand_name: [
+        ...new Set(
+          billingItems
+            .map((item) => item.vikas_khand_name)
+            .filter(Boolean),
+        ),
+      ],
+      vidhan_sabha_name: [
+        ...new Set(
+          billingItems
+            .map((item) => item.vidhan_sabha_name)
+            .filter(Boolean),
+        ),
+      ],
+    });
 
-      // Extract unique created_at dates for the new date filter
-      const createdAtDates = allBillingItems
-        .map((item) =>
-          item.created_at
-            ? new Date(item.created_at).toISOString().split("T")[0]
-            : null,
-        )
-        .filter(Boolean);
-      const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
-      setUniqueCreatedAtDates(uniqueDates);
-    }
-  }, [allBillingItems]);
+    const createdAtDates = billingItems
+      .map((item) =>
+        item.created_at
+          ? new Date(item.created_at).toISOString().split("T")[0]
+          : null,
+      )
+      .filter(Boolean);
+    const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
+    setUniqueCreatedAtDates(uniqueDates);
+  }, [billingItems]);
 
   // Apply local filtering when filters change
   useEffect(() => {

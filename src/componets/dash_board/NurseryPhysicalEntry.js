@@ -407,38 +407,35 @@ const NurseryPhysicalEntry = () => {
     fetchRecipientItems();
   }, []);
 
-  // Populate filter options from all items
+  // Populate filter options from currently filtered items
   useEffect(() => {
-    if (allNurseryPhysicalItems.length > 0) {
-      setFilterOptions({
-        nursery_name: [
-          ...new Set(
-            allNurseryPhysicalItems
-              .map((item) => item.nursery_name)
-              .filter(Boolean),
-          ),
-        ].sort(),
-        crop_name: [
-          ...new Set(
-            allNurseryPhysicalItems
-              .map((item) => item.crop_name)
-              .filter(Boolean),
-          ),
-        ].sort(),
-      });
+    setFilterOptions({
+      nursery_name: [
+        ...new Set(
+          nurseryPhysicalItems
+            .map((item) => item.nursery_name)
+            .filter(Boolean),
+        ),
+      ].sort(),
+      crop_name: [
+        ...new Set(
+          nurseryPhysicalItems
+            .map((item) => item.crop_name)
+            .filter(Boolean),
+        ),
+      ].sort(),
+    });
 
-      // Extract unique created_at dates for the new date filter
-      const createdAtDates = allNurseryPhysicalItems
-        .map((item) =>
-          item.created_at
-            ? new Date(item.created_at).toISOString().split("T")[0]
-            : null,
-        )
-        .filter(Boolean);
-      const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
-      setUniqueCreatedAtDates(uniqueDates);
-    }
-  }, [allNurseryPhysicalItems]);
+    const createdAtDates = nurseryPhysicalItems
+      .map((item) =>
+        item.created_at
+          ? new Date(item.created_at).toISOString().split("T")[0]
+          : null,
+      )
+      .filter(Boolean);
+    const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
+    setUniqueCreatedAtDates(uniqueDates);
+  }, [nurseryPhysicalItems]);
 
   // Apply local filtering when filters change (based on created_at field)
   useEffect(() => {

@@ -281,38 +281,35 @@ const NurseryFinancialEntry = () => {
     fetchNurseryFinancialItems();
   }, []);
 
-  // Populate filter options from all items
+  // Populate filter options from currently filtered items
   useEffect(() => {
-    if (allNurseryFinancialItems.length > 0) {
-      setFilterOptions({
-        nursery_name: [
-          ...new Set(
-            allNurseryFinancialItems
-              .map((item) => item.nursery_name)
-              .filter(Boolean),
-          ),
-        ].sort(),
-        standard_item: [
-          ...new Set(
-            allNurseryFinancialItems
-              .map((item) => item.standard_item)
-              .filter(Boolean),
-          ),
-        ].sort(),
-      });
+    setFilterOptions({
+      nursery_name: [
+        ...new Set(
+          nurseryFinancialItems
+            .map((item) => item.nursery_name)
+            .filter(Boolean),
+        ),
+      ].sort(),
+      standard_item: [
+        ...new Set(
+          nurseryFinancialItems
+            .map((item) => item.standard_item)
+            .filter(Boolean),
+        ),
+      ].sort(),
+    });
 
-      // Extract unique created_at dates for the new date filter
-      const createdAtDates = allNurseryFinancialItems
-        .map((item) =>
-          item.created_at
-            ? new Date(item.created_at).toISOString().split("T")[0]
-            : null,
-        )
-        .filter(Boolean);
-      const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
-      setUniqueCreatedAtDates(uniqueDates);
-    }
-  }, [allNurseryFinancialItems]);
+    const createdAtDates = nurseryFinancialItems
+      .map((item) =>
+        item.created_at
+          ? new Date(item.created_at).toISOString().split("T")[0]
+          : null,
+      )
+      .filter(Boolean);
+    const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
+    setUniqueCreatedAtDates(uniqueDates);
+  }, [nurseryFinancialItems]);
 
   // Apply local filtering when filters change
   useEffect(() => {

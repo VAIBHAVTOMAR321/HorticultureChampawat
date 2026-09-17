@@ -850,65 +850,62 @@ const KrishiRegistration = () => {
     }
   }, [formData.center_name]);
 
-  // Populate filter options from all beneficiaries
+  // Populate filter options from currently filtered items
   useEffect(() => {
-    if (allBeneficiaries.length > 0) {
-      setFilterOptions({
-        farmer_name: [
-          ...new Set(
-            allBeneficiaries.map((item) => item.farmer_name).filter(Boolean),
-          ),
-        ],
-        center_name: [
-          ...new Set(
-            allBeneficiaries.map((item) => item.center_name).filter(Boolean),
-          ),
-        ],
-        supplied_item_name: [
-          ...new Set(
-            allBeneficiaries
-              .map((item) => item.supplied_item_name)
-              .filter(Boolean),
-          ),
-        ],
-        category: [
-          ...new Set(
-            allBeneficiaries.map((item) => item.category).filter(Boolean),
-          ),
-        ],
-        scheme_name: [
-          ...new Set(
-            allBeneficiaries.map((item) => item.scheme_name).filter(Boolean),
-          ),
-        ],
-        vikas_khand_name: [
-          ...new Set(
-            allBeneficiaries
-              .map((item) => item.vikas_khand_name)
-              .filter(Boolean),
-          ),
-        ],
-        vidhan_sabha_name: [
-          ...new Set(
-            allBeneficiaries
-              .map((item) => item.vidhan_sabha_name)
-              .filter(Boolean),
-          ),
-        ],
-      });
+    setFilterOptions({
+      farmer_name: [
+        ...new Set(
+          beneficiaries.map((item) => item.farmer_name).filter(Boolean),
+        ),
+      ],
+      center_name: [
+        ...new Set(
+          beneficiaries.map((item) => item.center_name).filter(Boolean),
+        ),
+      ],
+      supplied_item_name: [
+        ...new Set(
+          beneficiaries
+            .map((item) => item.supplied_item_name)
+            .filter(Boolean),
+        ),
+      ],
+      category: [
+        ...new Set(
+          beneficiaries.map((item) => item.category).filter(Boolean),
+        ),
+      ],
+      scheme_name: [
+        ...new Set(
+          beneficiaries.map((item) => item.scheme_name).filter(Boolean),
+        ),
+      ],
+      vikas_khand_name: [
+        ...new Set(
+          beneficiaries
+            .map((item) => item.vikas_khand_name)
+            .filter(Boolean),
+        ),
+      ],
+      vidhan_sabha_name: [
+        ...new Set(
+          beneficiaries
+            .map((item) => item.vidhan_sabha_name)
+            .filter(Boolean),
+        ),
+      ],
+    });
 
-      // Extract unique created_at dates for the new date filter
-      const createdAtDates = allBeneficiaries
-        .map((item) =>
-          item.created_at
-            ? new Date(item.created_at).toISOString().split("T")[0]
-            : null,
-        )
-        .filter(Boolean);
-      const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
-      setUniqueCreatedAtDates(uniqueDates);
-    }
-  }, [allBeneficiaries]);
+    const createdAtDates = beneficiaries
+      .map((item) =>
+        item.created_at
+          ? new Date(item.created_at).toISOString().split("T")[0]
+          : null,
+      )
+      .filter(Boolean);
+    const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
+    setUniqueCreatedAtDates(uniqueDates);
+  }, [beneficiaries]);
 
   // Apply local filtering when filters change
   useEffect(() => {

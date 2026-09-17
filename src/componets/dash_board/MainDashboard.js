@@ -2143,6 +2143,100 @@ const MainDashboard = () => {
     fetchFilterOptions();
   }, []);
 
+  // Update filter options whenever filteredTableData changes
+  useEffect(() => {
+    setFilterOptions({
+      center_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.center_name)
+            .filter(Boolean),
+        ),
+      ],
+      sub_investment_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.sub_investment_name)
+            .filter(Boolean),
+        ),
+      ],
+      investment_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.investment_name)
+            .filter(Boolean),
+        ),
+      ],
+      source_of_receipt: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.source_of_receipt)
+            .filter(Boolean),
+        ),
+      ],
+      scheme_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.scheme_name)
+            .filter(Boolean),
+        ),
+      ],
+      vikas_khand_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.vikas_khand_name)
+            .filter(Boolean),
+        ),
+      ],
+      vidhan_sabha_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.vidhan_sabha_name)
+            .filter(Boolean),
+        ),
+      ],
+      unit: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.unit)
+            .filter(Boolean),
+        ),
+      ],
+      anudan_name: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.anudan_name)
+            .filter(Boolean),
+        ),
+      ],
+      farmer_selling_rate: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.farmer_selling_rate)
+            .filter(
+              (v) => v !== null && v !== undefined && v !== "",
+            ),
+        ),
+      ],
+      farmer_subsidy_rate: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.farmer_subsidy_rate)
+            .filter(
+              (v) => v !== null && v !== undefined && v !== "",
+            ),
+        ),
+      ],
+      remark: [
+        ...new Set(
+          filteredTableData
+            .map((item) => item.remark)
+            .filter(Boolean),
+        ),
+      ],
+    });
+  }, [filteredTableData]);
+
   // Clear all filters
   const clearFilters = () => {
     const { start, end } = getFinancialYearDates();
