@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   Container,
   Form,
@@ -38,34 +38,19 @@ import {
 
 // API URLs
 const BILLING_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
 const VIKAS_KHAND_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/get-vikas-khand-by-center/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/get-vikas-khand-by-center/";
 const FORM_FILTERS_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-form-filters/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-form-filters/";
 const CENTERS_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/centers/";
+  "https://mahadevaaya.com/govbillingsystem/backend/api/centers/";
 
 // Utility function to round numbers to 2 decimal places
 const roundTo2Decimals = (value) => {
   const num = parseFloat(value) || 0;
   return isNaN(num) ? 0 : Math.round(num * 100) / 100;
 };
-
-const validKendraNames = [
-  "बस्तिया",
-  "सूखीढांग",
-  "चम्पावत",
-  "मंच",
-  "लोहाघाट",
-  "किमतोली",
-  "रौसाल",
-  "बाराकोट",
-  "चैमेल",
-  "खेतीखान",
-  "भिगराड़ा",
-  "देवीधुरा",
-];
 
 // Static options for form fields
 const investmentOptions = [
@@ -77,89 +62,117 @@ const investmentOptions = [
 const unitOptions = ["बैग", "क्विंटल", "किलोग्राम", "नंबर", "लीटर"];
 const sourceOptions = ["PWD", "PMGSY", "NREGA"];
 const schemeOptions = ["MGNREGA", "PMKSY", "DDUGJY"];
-const vikasKhandOptions = [
- "चम्पावत",
- "लोहाघाट",
- "बाराकोट",
- "पाटी",
-  
-];
-const vidhanSabhaOptions = [
-  "चम्पावत",
-  "लोहाघाट",
-];
+
+// Center to Vikas Khand and Vidhan Sabha mapping (new data)
+const centerToVikasKhandVidhanSabha = {
+  "बस्तिया": { vikas_khand_name: "चम्पावत", vidhan_sabha_name: "चम्पावत" },
+  "सूखीढांग": { vikas_khand_name: "चम्पावत", vidhan_sabha_name: "चम्पावत" },
+  "चम्पावत": { vikas_khand_name: "चम्पावत", vidhan_sabha_name: "चम्पावत" },
+  "मंच": { vikas_khand_name: "चम्पावत", vidhan_sabha_name: "चम्पावत" },
+  "लोहाघाट": { vikas_khand_name: "लोहाघाट", vidhan_sabha_name: "लोहाघाट" },
+  "किमतोली": { vikas_khand_name: "लोहाघाट", vidhan_sabha_name: "लोहाघाट" },
+  "रौसाल": { vikas_khand_name: "लोहाघाट", vidhan_sabha_name: "लोहाघाट" },
+  "बाराकोट": { vikas_khand_name: "बाराकोट", vidhan_sabha_name: "लोहाघाट" },
+  "चैमेल": { vikas_khand_name: "बाराकोट", vidhan_sabha_name: "लोहाघाट" },
+  "खेतीखान": { vikas_khand_name: "पाटी", vidhan_sabha_name: "लोहाघाट" },
+  "भिगराड़ा": { vikas_khand_name: "पाटी", vidhan_sabha_name: "लोहाघाट" },
+  "देवीधुरा": { vikas_khand_name: "पाटी", vidhan_sabha_name: "लोहाघाट" },
+};
+
+// Derived unique options from the mapping
+const validKendraNames = Object.keys(centerToVikasKhandVidhanSabha);
+const vikasKhandOptions = [...new Set(Object.values(centerToVikasKhandVidhanSabha).map(v => v.vikas_khand_name))];
+const vidhanSabhaOptions = [...new Set(Object.values(centerToVikasKhandVidhanSabha).map(v => v.vidhan_sabha_name))];
 
 // Available columns for the table (excluding sno which is always shown)
 // Reordered according to the requested sequence
 const billingTableColumns = [
   { key: "center_name", label: "केंद्र का नाम" },
-  { key: "vidhan_sabha_name", label: "विधानसभा का नाम" },
-  { key: "vikas_khand_name", label: "विकास खंड का नाम" },
-  { key: "scheme_name", label: "योजना का नाम" },
+  { key: "scheme_name", label: "क्रय योजना का नाम" },
   { key: "source_of_receipt", label: "सप्लायर" },
-  { key: "investment_name", label: "निवेश का नाम" },
-  { key: "sub_investment_name", label: "उप-निवेश का नाम" },
+  { key: "investment_name", label: "मद का नाम" },
+  { key: "sub_investment_name", label: "उप-मद का नाम" },
   { key: "unit", label: "इकाई" },
-  { key: "allocated_quantity", label: "आवंटित मात्रा" },
-  { key: "rate", label: "दर" },
-  { key: "amount_of_farmer_share", label: "किसान का हिस्सा" },
-  { key: "amount_of_subsidy", label: "सब्सिडी राशि" },
-  { key: "total_amount", label: "कुल राशि" },
+  { key: "allocated_quantity", label: "आवंटित मात्रा " },
+  { key: "rate", label: "क्रय दर\n(प्रति इकाई)" },
+  { key: "farmer_selling_rate", label: "कृषक विक्रय दर\n(प्रति इकाई)" },
+  { key: "farmer_subsidy_rate", label: "कृषक अनुदान दर\n(प्रति इकाई)" },
+  { key: "amount_of_farmer_share", label: "कृषक अंश\n(रु0)" },
+  { key: "amount_of_subsidy", label: "अनुदान राशि\n(रु0)" },
+  { key: "total_amount", label: "कुल राशि\n(रु0)" },
+  { key: "anudan_name", label: "अनुदान वहन योजना" },
+  { key: "remark", label: "रिमार्क" },
   { key: "bill_date", label: "पंजीकरण तिथि" },
 ];
 
-// Column mapping for data access
 const billingTableColumnMapping = {
   sno: { header: "क्र.सं.", accessor: (item, index) => index + 1 },
   center_name: {
     header: "केंद्र का नाम",
-    accessor: (item) => item.center_name,
+    accessor: (item) => item.center_name || "",
   },
-  vidhan_sabha_name: {
-    header: "विधानसभा का नाम",
-    accessor: (item) => item.vidhan_sabha_name,
+  scheme_name: {
+    header: "क्रय योजना का नाम",
+    accessor: (item) => item.scheme_name || "",
   },
-  vikas_khand_name: {
-    header: "विकास खंड का नाम",
-    accessor: (item) => item.vikas_khand_name,
-  },
-  scheme_name: { header: "योजना का नाम", accessor: (item) => item.scheme_name },
   source_of_receipt: {
     header: "सप्लायर",
-    accessor: (item) => item.source_of_receipt,
+    accessor: (item) => item.source_of_receipt || "",
   },
   investment_name: {
-    header: "निवेश का नाम",
-    accessor: (item) => item.investment_name,
+    header: "मद का नाम",
+    accessor: (item) => item.investment_name || "",
   },
   sub_investment_name: {
-    header: "उप-निवेश का नाम",
-    accessor: (item) => item.sub_investment_name,
+    header: "उप-मद का नाम",
+    accessor: (item) => item.sub_investment_name || "",
   },
-  unit: { header: "इकाई", accessor: (item) => item.unit },
+  unit: {
+    header: "इकाई",
+    accessor: (item) => item.unit || "",
+  },
   allocated_quantity: {
-    header: "आवंटित मात्रा",
-    accessor: (item) => item.allocated_quantity,
+    header: "आवंटित मात्रा ",
+    accessor: (item) => item.allocated_quantity ?? "",
   },
-  rate: { header: "दर", accessor: (item) => item.rate },
+  rate: {
+    header: "क्रय दर\n(प्रति इकाई)",
+    accessor: (item) => item.rate ?? "",
+  },
+  farmer_selling_rate: {
+    header: "कृषक विक्रय दर\n(प्रति इकाई)",
+    accessor: (item) => item.farmer_selling_rate ?? "",
+  },
+  farmer_subsidy_rate: {
+    header: "कृषक अनुदान दर\n(प्रति इकाई)",
+    accessor: (item) => item.farmer_subsidy_rate ?? "",
+  },
   amount_of_farmer_share: {
-    header: "किसान का हिस्सा",
-    accessor: (item) => item.amount_of_farmer_share || 0,
+    header: "कृषक अंश\n(रु0)",
+    accessor: (item) => item.amount_of_farmer_share ?? 0,
   },
   amount_of_subsidy: {
-    header: "सब्सिडी राशि",
-    accessor: (item) => item.amount_of_subsidy || 0,
+    header: "अनुदान राशि\n(रु0)",
+    accessor: (item) => item.amount_of_subsidy ?? 0,
   },
   total_amount: {
-    header: "कुल राशि",
-    accessor: (item) => item.total_amount || 0,
+    header: "कुल राशि\n(रु0)",
+    accessor: (item) => item.total_amount ?? 0,
+  },
+  anudan_name: {
+    header: "अनुदान वहन योजना",
+    accessor: (item) => item.anudan_name || "",
+  },
+  remark: {
+    header: "रिमार्क",
+    accessor: (item) => item.remark || "",
   },
   bill_date: {
     header: "पंजीकरण तिथि",
     accessor: (item) => {
       if (!item.bill_date) return "";
       const date = new Date(item.bill_date);
-      return date.toLocaleDateString("hi-IN");
+      return isNaN(date.getTime()) ? item.bill_date : date.toLocaleDateString("hi-IN");
     },
   },
 };
@@ -168,16 +181,20 @@ const billingTableColumnMapping = {
 const translations = {
   pageTitle: "सप्लायर डेटा एंट्री",
   centerName: "केंद्र का नाम",
-  investmentName: "निवेश का नाम",
-  subInvestmentName: "उप-निवेश का नाम",
+  investmentName: "मद का नाम",
+  subInvestmentName: "उप-मद का नाम",
   unit: "इकाई",
-  allocatedQuantity: "आवंटित मात्रा",
-  rate: "दर",
+  allocatedQuantity: "आवंटित मात्रा ",
+  rate: "क्रय दर\n(प्रति इकाई)",
+  farmerSellingRate: "कृषक विक्रय दर\n(प्रति इकाई)",
+  farmerSubsidyRate: "कृषक अनुदान दर\n(प्रति इकाई)",
   sourceOfReceipt: "सप्लायर",
-  schemeName: "योजना का नाम",
-  amountOfFarmerShare: "किसान का हिस्सा",
-  amountOfSubsidy: "सब्सिडी राशि",
-  totalAmount: "कुल राशि",
+  schemeName: "क्रय योजना का नाम",
+  amountOfFarmerShare: "कृषक अंश\n(रु0)",
+  amountOfSubsidy: "अनुदान राशि\n(रु0)",
+  totalAmount: "कुल राशि\n(रु0)",
+  anudanName: "अनुदान वहन योजना",
+  remark: "रिमार्क",
   vikasKhandName: "विकास खंड का नाम",
   vidhanSabhaName: "विधानसभा का नाम",
   startDate: "प्रारंभ तिथि",
@@ -190,8 +207,7 @@ const translations = {
   uploadButton: "अपलोड करें",
   required: "यह फ़ील्ड आवश्यक है",
   selectOption: "चुनें",
-  genericError:
-    "प्रस्तुत करते समय एक त्रुटि हुई। कृपया बाद में पुन: प्रयास करें।",
+  genericError: "प्रस्तुत करते समय एक त्रुटि हुई। कृपया बाद में पुन: प्रयास करें।",
   showing: "दिखा रहे हैं",
   to: "से",
   of: "का",
@@ -292,6 +308,10 @@ const Registration = () => {
     amount_of_farmer_share: "",
     amount_of_subsidy: "",
     total_amount: "",
+    farmer_selling_rate: "",
+    farmer_subsidy_rate: "",
+    anudan_name: "",
+    remark: "",
     bill_date: "",
   });
 
@@ -326,7 +346,7 @@ const Registration = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [vikasKhandData, setVikasKhandData] = useState(null);
   const [isFetchingVikasKhand, setIsFetchingVikasKhand] = useState(false);
-  const [centerOptions, setCenterOptions] = useState(validKendraNames);
+  const [centerOptions, setCenterOptions] = useState([]);
 
   // State for filters
   const [filters, setFilters] = useState({
@@ -351,7 +371,7 @@ const Registration = () => {
   // State to store unique created_at dates extracted from data
   const [uniqueCreatedAtDates, setUniqueCreatedAtDates] = useState([]);
 
-  // State for filter options (unique values from API)
+  // State for filter options (unique values from date-filtered data)
   const [filterOptions, setFilterOptions] = useState({
     center_name: [],
     investment_name: [],
@@ -361,6 +381,7 @@ const Registration = () => {
     scheme_name: [],
     vikas_khand_name: [],
     vidhan_sabha_name: [],
+    anudan_name: [],
   });
 
   // State for pagination
@@ -435,15 +456,14 @@ const Registration = () => {
       const response = await axios.get(CENTERS_API_URL);
       const centers = response.data || [];
       if (Array.isArray(centers) && centers.length > 0) {
-        const merged = Array.from(
-          new Set([...validKendraNames, ...centers]),
-        );
-        setCenterOptions(merged);
+        setCenterOptions(centers);
       } else {
+        // Fallback to new mapping center names if API returns empty or invalid data
         setCenterOptions(validKendraNames);
       }
     } catch (error) {
       console.error("Error fetching center options:", error);
+      // Fallback to new mapping center names if API fails
       setCenterOptions(validKendraNames);
     }
   };
@@ -486,7 +506,7 @@ const Registration = () => {
     }
   };
 
-  // Fetch vikas khand data based on center
+  // Fetch vikas khand data based on center (using local mapping instead of API)
   const fetchVikasKhandData = async (centerName) => {
     if (!centerName) {
       setVikasKhandData(null);
@@ -502,36 +522,12 @@ const Registration = () => {
       setIsFetchingVikasKhand(true);
       console.log("Fetching vikas khand for center:", centerName);
 
-      // Try exact match first
-      let response = await axios.get(
-        `${VIKAS_KHAND_API_URL}?center_name=${encodeURIComponent(centerName)}`,
-      );
-
-      let data = response.data;
-      console.log("API response:", data);
-
-      // If no data found with exact match, try partial match
-      if (!data || (Array.isArray(data) && data.length === 0)) {
-        console.log("No exact match found, trying partial match");
-        response = await axios.get(
-          `${VIKAS_KHAND_API_URL}?search=${encodeURIComponent(centerName)}`,
-        );
-        data = response.data;
-        console.log("Partial match response:", data);
-      }
-
-      // Handle different response structures
+      // Use local mapping instead of API
+      const mapping = centerToVikasKhandVidhanSabha[centerName];
+      
       let vikasData = null;
-      if (Array.isArray(data) && data.length > 0) {
-        vikasData = data[0];
-      } else if (data && typeof data === "object") {
-        // Check if the response has the expected fields
-        if (data.vikas_khand_name || data.vidhan_sabha_name) {
-          vikasData = data;
-        } else if (data.data && typeof data.data === "object") {
-          // Handle nested data structure
-          vikasData = data.data;
-        }
+      if (mapping) {
+        vikasData = mapping;
       }
 
       console.log("Extracted vikas data:", vikasData);
@@ -717,110 +713,31 @@ const Registration = () => {
     fetchCenterOptions();
   }, []);
 
-  // Populate filter options from currently filtered items
-  useEffect(() => {
-    setFilterOptions({
-      center_name: [
-        ...new Set(
-          billingItems.map((item) => item.center_name).filter(Boolean),
-        ),
-      ],
-      investment_name: [
-        ...new Set(
-          billingItems.map((item) => item.investment_name).filter(Boolean),
-        ),
-      ],
-      sub_investment_name: [
-        ...new Set(
-          billingItems
-            .map((item) => item.sub_investment_name)
-            .filter(Boolean),
-        ),
-      ],
-      unit: [
-        ...new Set(billingItems.map((item) => item.unit).filter(Boolean)),
-      ],
-      source_of_receipt: [
-        ...new Set(
-          billingItems
-            .map((item) => item.source_of_receipt)
-            .filter(Boolean),
-        ),
-      ],
-      scheme_name: [
-        ...new Set(
-          billingItems.map((item) => item.scheme_name).filter(Boolean),
-        ),
-      ],
-      vikas_khand_name: [
-        ...new Set(
-          billingItems
-            .map((item) => item.vikas_khand_name)
-            .filter(Boolean),
-        ),
-      ],
-      vidhan_sabha_name: [
-        ...new Set(
-          billingItems
-            .map((item) => item.vidhan_sabha_name)
-            .filter(Boolean),
-        ),
-      ],
-    });
-
-    const createdAtDates = billingItems
-      .map((item) =>
-        item.created_at
-          ? new Date(item.created_at).toISOString().split("T")[0]
-          : null,
-      )
-      .filter(Boolean);
-    const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
-    setUniqueCreatedAtDates(uniqueDates);
-  }, [billingItems]);
-
-  // Apply local filtering when filters change
-  useEffect(() => {
+  // Compute date-filtered data (after date filters but before multi-select filters)
+  const dateFilteredItems = useMemo(() => {
     let filtered = allBillingItems;
 
-    const hasFilters = Object.keys(filters).some((key) =>
-      Array.isArray(filters[key])
-        ? filters[key].length > 0
-        : filters[key].trim(),
-    );
-    if (hasFilters) {
-      filtered = allBillingItems.filter((item) => {
-        // Check all other filters
-        for (const key in filters) {
-          if (key === "start_date" || key === "end_date") continue;
-          if (filters[key].length > 0 && !filters[key].includes(item[key])) {
-            return false;
-          }
+    // Apply bill_date range filters (start_date, end_date)
+    if (filters.start_date || filters.end_date) {
+      filtered = filtered.filter((item) => {
+        if (!item.bill_date) return false;
+
+        const itemDate = new Date(item.bill_date);
+        const startDate = filters.start_date ? new Date(filters.start_date) : null;
+        const endDate = filters.end_date ? new Date(filters.end_date) : null;
+
+        if (endDate) {
+          endDate.setHours(23, 59, 59, 999);
         }
 
-        // Check date range filters (use bill_date)
-        if (filters.start_date || filters.end_date) {
-          if (!item.bill_date) return false;
-
-          const itemDate = new Date(item.bill_date);
-          const startDate = filters.start_date
-            ? new Date(filters.start_date)
-            : null;
-          const endDate = filters.end_date ? new Date(filters.end_date) : null;
-
-          if (endDate) {
-            endDate.setHours(23, 59, 59, 999);
-          }
-
-          if (startDate && itemDate < startDate) return false;
-          if (endDate && itemDate > endDate) return false;
-        }
+        if (startDate && itemDate < startDate) return false;
+        if (endDate && itemDate > endDate) return false;
 
         return true;
       });
     }
 
-    // Apply created_at filter on top of other filters
+    // Apply created_at filter
     if (createdAtFilter.selectedDate || createdAtFilter.manualDate) {
       const { selectedDate, manualDate } = createdAtFilter;
       const filterDate = selectedDate || manualDate;
@@ -832,8 +749,127 @@ const Registration = () => {
       });
     }
 
+    return filtered;
+  }, [allBillingItems, filters.start_date, filters.end_date, createdAtFilter.selectedDate, createdAtFilter.manualDate]);
+
+  // Populate filter options from date-filtered data
+  useEffect(() => {
+    if (dateFilteredItems.length > 0) {
+      setFilterOptions({
+        center_name: [
+          ...new Set(
+            dateFilteredItems.map((item) => item.center_name).filter(Boolean),
+          ),
+        ],
+        investment_name: [
+          ...new Set(
+            dateFilteredItems.map((item) => item.investment_name).filter(Boolean),
+          ),
+        ],
+        sub_investment_name: [
+          ...new Set(
+            dateFilteredItems
+              .map((item) => item.sub_investment_name)
+              .filter(Boolean),
+          ),
+        ],
+        unit: [
+          ...new Set(dateFilteredItems.map((item) => item.unit).filter(Boolean)),
+        ],
+        source_of_receipt: [
+          ...new Set(
+            dateFilteredItems
+              .map((item) => item.source_of_receipt)
+              .filter(Boolean),
+          ),
+        ],
+        scheme_name: [
+          ...new Set(
+            dateFilteredItems.map((item) => item.scheme_name).filter(Boolean),
+          ),
+        ],
+        vikas_khand_name: [
+          ...new Set(
+            dateFilteredItems
+              .map((item) => item.vikas_khand_name)
+              .filter(Boolean),
+          ),
+        ],
+        vidhan_sabha_name: [
+          ...new Set(
+            dateFilteredItems
+              .map((item) => item.vidhan_sabha_name)
+              .filter(Boolean),
+          ),
+        ],
+        anudan_name: [
+          ...new Set(
+            dateFilteredItems
+              .map((item) => item.anudan_name)
+              .filter(Boolean),
+          ),
+        ],
+      });
+    } else {
+      // Reset filter options when no date-filtered data
+      setFilterOptions({
+        center_name: [],
+        investment_name: [],
+        sub_investment_name: [],
+        unit: [],
+        source_of_receipt: [],
+        scheme_name: [],
+        vikas_khand_name: [],
+        vidhan_sabha_name: [],
+        anudan_name: [],
+      });
+    }
+  }, [dateFilteredItems]);
+
+  // Extract unique created_at dates from ALL data for the date selector dropdown
+  useEffect(() => {
+    if (allBillingItems.length > 0) {
+      const createdAtDates = allBillingItems
+        .map((item) =>
+          item.created_at
+            ? new Date(item.created_at).toISOString().split("T")[0]
+            : null,
+        )
+        .filter(Boolean);
+      const uniqueDates = [...new Set(createdAtDates)].sort().reverse();
+      setUniqueCreatedAtDates(uniqueDates);
+    } else {
+      setUniqueCreatedAtDates([]);
+    }
+  }, [allBillingItems]);
+
+  // Apply local filtering when filters change
+  useEffect(() => {
+    let filtered = dateFilteredItems;
+
+    const hasFilters = Object.keys(filters).some((key) =>
+      Array.isArray(filters[key])
+        ? filters[key].length > 0
+        : filters[key].trim(),
+    );
+    if (hasFilters) {
+      filtered = dateFilteredItems.filter((item) => {
+        // Check all other filters
+        for (const key in filters) {
+          if (key === "start_date" || key === "end_date") continue;
+          if (filters[key].length > 0 && !filters[key].includes(item[key])) {
+            return false;
+          }
+        }
+
+        return true;
+      });
+    }
+
+    // Note: created_at filter and date range filters are already applied in dateFilteredItems, so no need to apply again
+
     setBillingItems(filtered);
-  }, [filters, allBillingItems, createdAtFilter]);
+  }, [filters, dateFilteredItems]);
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -944,66 +980,141 @@ const Registration = () => {
     });
   };
 
+  // Numeric/categorical totals used by Excel/PDF/table exports
+  const getColumnTotal = (data, col) => {
+    const numericColumns = [
+      "allocated_quantity",
+      "rate",
+      "farmer_selling_rate",
+      "farmer_subsidy_rate",
+      "amount_of_farmer_share",
+      "amount_of_subsidy",
+      "total_amount",
+    ];
+
+    if (numericColumns.includes(col)) {
+      return data
+        .reduce((sum, item) => sum + (parseFloat(item[col]) || 0), 0)
+        .toFixed(2);
+    }
+
+    if (col === "bill_date" || col === "remark" || col === "anudan_name") {
+      return "";
+    }
+
+    const values = new Set(
+      data.map((item) => item[col]).filter((value) => value !== null && value !== undefined && value !== "")
+    );
+    return values.size;
+  };
+
+  const renderTableCell = (item, col) => {
+    if (editingRowId !== item.id) {
+      return billingTableColumnMapping[col]?.accessor(item, 0) ?? "";
+    }
+
+    const numericColumns = [
+      "allocated_quantity",
+      "rate",
+      "farmer_selling_rate",
+      "farmer_subsidy_rate",
+      "amount_of_farmer_share",
+      "amount_of_subsidy",
+      "total_amount",
+    ];
+
+    if (col === "center_name") {
+      return (
+        <Form.Select
+          value={editingValues.center_name || ""}
+          onChange={(e) =>
+            setEditingValues((prev) => ({
+              ...prev,
+              center_name: e.target.value,
+            }))
+          }
+          size="sm"
+        >
+          <option value="">चुनें</option>
+          {centerOptions.map((center, index) => (
+            <option key={index} value={center}>
+              {center}
+            </option>
+          ))}
+        </Form.Select>
+      );
+    }
+
+    if (col === "bill_date") {
+      return (
+        <Form.Control
+          type="date"
+          value={editingValues.bill_date || ""}
+          onChange={(e) =>
+            setEditingValues((prev) => ({ ...prev, bill_date: e.target.value }))
+          }
+          size="sm"
+        />
+      );
+    }
+
+    if (numericColumns.includes(col)) {
+      return (
+        <Form.Control
+          type="number"
+          step="0.01"
+          value={editingValues[col] ?? ""}
+          onChange={(e) =>
+            setEditingValues((prev) => ({ ...prev, [col]: e.target.value }))
+          }
+          size="sm"
+        />
+      );
+    }
+
+    return (
+      <Form.Control
+        type="text"
+        value={editingValues[col] ?? ""}
+        onChange={(e) =>
+          setEditingValues((prev) => ({ ...prev, [col]: e.target.value }))
+        }
+        size="sm"
+      />
+    );
+  };
+
   // Download Excel function
   const downloadExcel = (data, filename, columnMapping, selectedColumns) => {
     try {
+      const orderedColumns = selectedColumns.filter((col) => columnMapping[col]);
       const excelData = data.map((item, index) => {
-        const row = {};
-        // Add serial number column
-        row["क्र.सं."] = index + 1;
-        selectedColumns.forEach((col) => {
-          row[columnMapping[col].header] = columnMapping[col].accessor(
-            item,
-            index,
-          );
+        const row = { "क्र.सं.": index + 1 };
+        orderedColumns.forEach((col) => {
+          row[columnMapping[col].header] = columnMapping[col].accessor(item, index);
         });
         return row;
       });
 
-      // Add total row
-      const totalRow = {};
-      // Add serial number column with "कुल" label
-      totalRow["क्र.सं."] = "कुल";
-      selectedColumns.forEach((col) => {
-        if (
-          col === "center_name" ||
-          col === "vidhan_sabha_name" ||
-          col === "vikas_khand_name" ||
-          col === "scheme_name" ||
-          col === "source_of_receipt" ||
-          col === "investment_name" ||
-          col === "sub_investment_name" ||
-          col === "unit"
-        ) {
-          // Unique count for categorical columns
-          const uniqueValues = new Set(
-            data.map((item) => columnMapping[col].accessor(item, 0)),
-          );
-          totalRow[columnMapping[col].header] = uniqueValues.size;
-        } else if (
-          col === "allocated_quantity" ||
-          col === "rate" ||
-          col === "amount_of_farmer_share" ||
-          col === "amount_of_subsidy" ||
-          col === "total_amount"
-        ) {
-          // Sum for numeric columns
-          const sum = data.reduce((total, item) => {
-            const value = parseFloat(columnMapping[col].accessor(item, 0)) || 0;
-            return total + value;
-          }, 0);
-          totalRow[columnMapping[col].header] = parseFloat(sum.toFixed(2));
-        } else {
-          totalRow[columnMapping[col].header] = "";
-        }
+      const totalRow = { "क्र.सं.": "कुल" };
+      orderedColumns.forEach((col) => {
+        totalRow[columnMapping[col].header] = getColumnTotal(data, col);
       });
       excelData.push(totalRow);
 
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(excelData);
-
-      const colWidths = selectedColumns.map(() => ({ wch: 15 }));
-      ws["!cols"] = colWidths;
+      ws["!cols"] = [
+        { wch: 8 },
+        ...orderedColumns.map((col) => ({
+          wch:
+            col === "remark" ? 35 :
+            col === "source_of_receipt" ? 30 :
+            col === "investment_name" ? 25 :
+            col === "sub_investment_name" ? 30 :
+            18,
+        })),
+      ];
 
       XLSX.utils.book_append_sheet(wb, ws, "Data");
       XLSX.writeFile(wb, `${filename}.xlsx`);
@@ -1013,48 +1124,74 @@ const Registration = () => {
     }
   };
 
-  // Download sample Excel template
+  // Download the NEW Excel sample template based on final_excel headings/order.
+  // The registration date is intentionally the LAST column.
   const downloadSampleTemplate = () => {
     try {
-      // Updated to match the new column order (without vikas_khand and vidhan_sabha - set in backend)
+      const headers = [
+        "केंद्र का नाम",
+        "क्रय योजना का नाम",
+        "सप्लायर",
+        "मद का नाम",
+        "उप-मद का नाम",
+        "इकाई",
+        "आवंटित मात्रा ",
+        "क्रय दर\n(प्रति इकाई)",
+        "कृषक विक्रय दर\n(प्रति इकाई)",
+        "कृषक अनुदान दर\n(प्रति इकाई)",
+        "कृषक अंश\n(रु0)",
+        "अनुदान राशि\n(रु0)",
+        "कुल राशि\n(रु0)",
+        "अनुदान वहन योजना",
+        "रिमार्क",
+        "पंजीकरण तिथि",
+      ];
+
       const sampleData = [
-        {
-          "केंद्र का नाम": "किनगोड़िखाल",
-          "योजना का नाम": "MGNREGA",
-          सप्लायर: "PWD",
-          "निवेश का नाम": "भवन निर्माण",
-          "उप-निवेश का नाम": "नया भवन",
-          इकाई: "बैग",
-          "आवंटित मात्रा": 100,
-          दर: 450.5,
-          "किसान का हिस्सा": 10000,
-          "सब्सिडी राशि": 20000,
-          "कुल राशि": 30000,
-          "पंजीकरण तिथि": getTodayInDisplayFormat(),
-        },
+        [
+          "किनगोड़िखाल",
+          "4401 बिक्री हेतु",
+          "मै0 किसान ट्रेडिंग कॉरपोरेशन",
+          "सब्जी बीज",
+          "पालक पहाड़ी",
+          "किग्रा",
+          2,
+          295,
+          147.5,
+          147.5,
+          295,
+          295,
+          590,
+          "जिला योजना",
+          "अनुदान जिला योजना मद से वहन",
+          getTodayInDisplayFormat(),
+        ],
       ];
 
       const wb = XLSX.utils.book_new();
-      const ws = XLSX.utils.json_to_sheet(sampleData);
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
 
-      const colWidths = [
-        { wch: 20 }, // केंद्र का नाम
-        { wch: 15 }, // योजना का नाम
-        { wch: 15 }, // सप्लायर
-        { wch: 20 }, // निवेश का नाम
-        { wch: 20 }, // उप-निवेश का नाम
-        { wch: 10 }, // इकाई
-        { wch: 15 }, // आवंटित मात्रा
-        { wch: 10 }, // दर
-        { wch: 15 }, // किसान का हिस्सा
-        { wch: 15 }, // सब्सिडी राशि
-        { wch: 15 }, // कुल राशि
-        { wch: 12 }, // पंजीकरण तिथि (last)
+      ws["!cols"] = [
+        { wch: 20 },
+        { wch: 25 },
+        { wch: 32 },
+        { wch: 25 },
+        { wch: 30 },
+        { wch: 10 },
+        { wch: 15 },
+        { wch: 18 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 22 },
+        { wch: 38 },
+        { wch: 15 },
       ];
-      ws["!cols"] = colWidths;
 
-      XLSX.utils.book_append_sheet(wb, ws, "SampleTemplate");
-      XLSX.writeFile(wb, `Billing_Items_Template.xlsx`);
+      XLSX.utils.book_append_sheet(wb, ws, "Master");
+      XLSX.writeFile(wb, "Billing_Items_Template.xlsx");
     } catch (e) {
       console.error("Error generating sample template:", e);
       setApiError("Sample template generation failed. Please try again.");
@@ -1235,7 +1372,7 @@ const Registration = () => {
       setIsLoading(true);
       const payload = { bill_id: selectedItems };
       await axios.delete(
-        "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/",
+        "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/",
         { data: payload },
       );
 
@@ -1322,6 +1459,10 @@ const Registration = () => {
       amount_of_farmer_share: item.amount_of_farmer_share || "",
       amount_of_subsidy: item.amount_of_subsidy || "",
       total_amount: item.total_amount || "",
+      farmer_selling_rate: item.farmer_selling_rate || "",
+      farmer_subsidy_rate: item.farmer_subsidy_rate || "",
+      anudan_name: item.anudan_name || "",
+      remark: item.remark || "",
     });
     if (item.investment_name) {
       fetchEditOptions(item.investment_name);
@@ -1350,6 +1491,12 @@ const Registration = () => {
           parseFloat(editingValues.amount_of_farmer_share) || 0,
         amount_of_subsidy: parseFloat(editingValues.amount_of_subsidy) || 0,
         total_amount: parseFloat(editingValues.total_amount) || 0,
+        farmer_selling_rate:
+          parseFloat(editingValues.farmer_selling_rate) || 0,
+        farmer_subsidy_rate:
+          parseFloat(editingValues.farmer_subsidy_rate) || 0,
+        anudan_name: editingValues.anudan_name || "",
+        remark: editingValues.remark || "",
       };
       const response = await axios.put(BILLING_API_URL, payload);
       setAllBillingItems((prev) =>
@@ -1503,7 +1650,7 @@ const Registration = () => {
       !rowData.investment_name ||
       !rowData.investment_name.toString().trim()
     ) {
-      errors.push(`Row ${rowIndex}: निवेश का नाम आवश्यक है`);
+      errors.push(`Row ${rowIndex}: मद का नाम आवश्यक है`);
     }
     if (!rowData.unit || !rowData.unit.toString().trim()) {
       errors.push(`Row ${rowIndex}: इकाई आवश्यक है`);
@@ -1522,9 +1669,9 @@ const Registration = () => {
       rowData.rate === null ||
       rowData.rate === undefined
     ) {
-      errors.push(`Row ${rowIndex}: दर आवश्यक है`);
+      errors.push(`Row ${rowIndex}: क्रय दर आवश्यक है`);
     } else if (isNaN(parseFloat(rowData.rate))) {
-      errors.push(`Row ${rowIndex}: दर एक संख्या होनी चाहिए`);
+      errors.push(`Row ${rowIndex}: क्रय दर एक संख्या होनी चाहिए`);
     }
     if (
       !rowData.source_of_receipt ||
@@ -1533,7 +1680,7 @@ const Registration = () => {
       errors.push(`Row ${rowIndex}: सप्लायर आवश्यक है`);
     }
     if (!rowData.scheme_name || !rowData.scheme_name.toString().trim()) {
-      errors.push(`Row ${rowIndex}: योजना का नाम आवश्यक है`);
+      errors.push(`Row ${rowIndex}: क्रय योजना का नाम आवश्यक है`);
     }
     // NOTE: vikas_khand_name and vidhan_sabha_name are NOT required for bulk upload - they are set in backend
 
@@ -1693,12 +1840,68 @@ const Registration = () => {
           const dataRows = jsonData.slice(1);
           const headers = jsonData[0];
 
+          // Normalize Excel headers. Excel may store line breaks, non-breaking
+          // spaces, or other Unicode whitespace differently from the template.
+          const normalizeExcelHeader = (header) =>
+            String(header ?? "")
+              .replace(/\r?\n/g, " ")
+              .replace(/[\u00A0\u2000-\u200B]/g, " ")
+              .replace(/\s+/g, " ")
+              .trim()
+              .toLowerCase();
+
           const headerMapping = {};
           headers.forEach((header, index) => {
-            if (header) {
-              headerMapping[header.toString().trim().toLowerCase()] = index;
+            const normalizedHeader = normalizeExcelHeader(header);
+            if (normalizedHeader) {
+              headerMapping[normalizedHeader] = index;
             }
           });
+
+          const getExcelCell = (row, ...possibleHeaders) => {
+            for (const header of possibleHeaders) {
+              const index = headerMapping[normalizeExcelHeader(header)];
+              if (typeof index !== "undefined") {
+                return row[index];
+              }
+            }
+            return "";
+          };
+
+          // Check for template columns only
+          const templateColumns = [
+            "केंद्र का नाम",
+            "क्रय योजना का नाम",
+            "सप्लायर",
+            "मद का नाम",
+            "उप-मद का नाम",
+            "इकाई",
+            "आवंटित मात्रा ",
+            "क्रय दर\n(प्रति इकाई)",
+            "कृषक विक्रय दर\n(प्रति इकाई)",
+            "कृषक अनुदान दर\n(प्रति इकाई)",
+            "कृषक अंश\n(रु0)",
+            "अनुदान राशि\n(रु0)",
+            "कुल राशि\n(रु0)",
+            "अनुदान वहन योजना",
+            "रिमार्क",
+            "पंजीकरण तिथि",
+          ];
+          const normalizedTemplateHeaders = templateColumns.map((h) =>
+            normalizeExcelHeader(h),
+          );
+          const missingColumns = [];
+          for (let i = 0; i < templateColumns.length; i++) {
+            if (typeof headerMapping[normalizedTemplateHeaders[i]] === "undefined") {
+              missingColumns.push(templateColumns[i]);
+            }
+          }
+          if (missingColumns.length > 0) {
+            setApiError(
+              `Excel फाइल में आवश्यक कॉलम मिले नहीं: ${missingColumns.join(", ")}. कृपया डाउनलोड किए गए टेम्पलेट का उपयोग करें।`,
+            );
+            return;
+          }
 
           // Determine bill_date column index
           const billDateHeaderKeys = [
@@ -1726,46 +1929,56 @@ const Registration = () => {
             const billDateRaw = row[billDateIndex] || "";
             const billDateISO = parseDateFromExcel(billDateRaw);
 
-            const rawCenterName = (
-              row[headerMapping["केंद्र का नाम"]] ||
-              row[headerMapping["center_name"]] ||
-              ""
-            )
-              .toString()
-              .trim();
-            const centerNameMatch = rawCenterName
-              ? findClosestCenterName(rawCenterName)
-              : null;
-            const parsedRow = {
-              center_name: rawCenterName,
-              center_name_original: rawCenterName,
-              center_name_invalid: Boolean(
-                rawCenterName && centerNameMatch && !centerNameMatch.matched,
-              ),
-              center_name_needs_correction: Boolean(
-                rawCenterName &&
-                  centerNameMatch &&
-                  centerNameMatch.needsCorrection,
-              ),
-              center_name_suggested:
-                rawCenterName && centerNameMatch && centerNameMatch.needsCorrection
-                  ? centerNameMatch.corrected
-                  : "",
-              vidhan_sabha_name: (
-                row[headerMapping["विधानसभा का नाम"]] ||
-                row[headerMapping["vidhan_sabha_name"]] ||
-                ""
-              )
-                .toString()
-                .trim(),
-              vikas_khand_name: (
-                row[headerMapping["विकास खंड का नाम"]] ||
-                row[headerMapping["vikas_khand_name"]] ||
-                ""
-              )
-                .toString()
-                .trim(),
+          const rawCenterName = getExcelCell(
+            row,
+            "केंद्र का नाम",
+            "center_name",
+            "center",
+            "केंद्र",
+            "center name",
+            "kendra name",
+            "kendra",
+          );
+          const centerNameMatch = rawCenterName
+            ? findClosestCenterName(rawCenterName)
+            : null;
+          const parsedRow = {
+            center_name: rawCenterName,
+            center_name_original: rawCenterName,
+            center_name_invalid: Boolean(
+              rawCenterName && centerNameMatch && !centerNameMatch.matched,
+            ),
+            center_name_needs_correction: Boolean(
+              rawCenterName &&
+                centerNameMatch &&
+                centerNameMatch.needsCorrection,
+            ),
+            center_name_suggested:
+              rawCenterName && centerNameMatch && centerNameMatch.needsCorrection
+                ? centerNameMatch.corrected
+                : "",
+            vidhan_sabha_name: getExcelCell(
+              row,
+              "विधानसभा का नाम",
+              "vidhan_sabha_name",
+              "vidhan sabha",
+              "vidhan sabha name",
+              "विधानसभा",
+              "assembly name",
+              "assembly",
+            ),
+            vikas_khand_name: getExcelCell(
+              row,
+              "विकास खंड का नाम",
+              "vikas_khand_name",
+              "vikas khand",
+              "vikas khand name",
+              "विकास खंड",
+              "development block",
+              "development block name",
+            ),
               scheme_name: (
+                row[headerMapping["क्रय योजना का नाम"]] ||
                 row[headerMapping["योजना का नाम"]] ||
                 row[headerMapping["scheme_name"]] ||
                 ""
@@ -1780,6 +1993,7 @@ const Registration = () => {
                 .toString()
                 .trim(),
               investment_name: (
+                row[headerMapping["मद का नाम"]] ||
                 row[headerMapping["निवेश का नाम"]] ||
                 row[headerMapping["investment_name"]] ||
                 ""
@@ -1787,6 +2001,7 @@ const Registration = () => {
                 .toString()
                 .trim(),
               sub_investment_name: (
+                row[headerMapping["उप-मद का नाम"]] ||
                 row[headerMapping["उप-निवेश का नाम"]] ||
                 row[headerMapping["sub_investment_name"]] ||
                 ""
@@ -1801,28 +2016,78 @@ const Registration = () => {
                 .toString()
                 .trim(),
               allocated_quantity: roundTo2Decimals(
-                row[headerMapping["आवंटित मात्रा"]] ||
-                  row[headerMapping["allocated_quantity"]] ||
-                  0,
+                getExcelCell(
+                  row,
+                  "आवंटित मात्रा ",
+                  "allocated_quantity",
+                ),
               ),
               rate: roundTo2Decimals(
-                row[headerMapping["दर"]] || row[headerMapping["rate"]] || 0,
+                getExcelCell(
+                  row,
+                  "क्रय दर (प्रति इकाई)",
+                  "क्रय दर\n(प्रति इकाई)",
+                  "दर",
+                  "rate",
+                ),
+              ),
+              farmer_selling_rate: roundTo2Decimals(
+                getExcelCell(
+                  row,
+                  "कृषक विक्रय दर (प्रति इकाई)",
+                  "कृषक विक्रय दर\n(प्रति इकाई)",
+                  "farmer_selling_rate",
+                ),
+              ),
+              farmer_subsidy_rate: roundTo2Decimals(
+                getExcelCell(
+                  row,
+                  "कृषक अनुदान दर (प्रति इकाई)",
+                  "कृषक अनुदान दर\n(प्रति इकाई)",
+                  "farmer_subsidy_rate",
+                ),
               ),
               amount_of_farmer_share: roundTo2Decimals(
-                row[headerMapping["किसान का हिस्सा"]] ||
-                  row[headerMapping["amount_of_farmer_share"]] ||
-                  0,
+                getExcelCell(
+                  row,
+                  "कृषक अंश (रु0)",
+                  "कृषक अंश\n(रु0)",
+                  "किसान का हिस्सा",
+                  "amount_of_farmer_share",
+                ),
               ),
               amount_of_subsidy: roundTo2Decimals(
-                row[headerMapping["सब्सिडी राशि"]] ||
-                  row[headerMapping["amount_of_subsidy"]] ||
-                  0,
+                getExcelCell(
+                  row,
+                  "अनुदान राशि (रु0)",
+                  "अनुदान राशि\n(रु0)",
+                  "सब्सिडी राशि",
+                  "amount_of_subsidy",
+                ),
               ),
               total_amount: roundTo2Decimals(
-                row[headerMapping["कुल राशि"]] ||
-                  row[headerMapping["total_amount"]] ||
-                  0,
+                getExcelCell(
+                  row,
+                  "कुल राशि (रु0)",
+                  "कुल राशि\n(रु0)",
+                  "कुल राशि",
+                  "total_amount",
+                ),
               ),
+              anudan_name: (
+                row[headerMapping["अनुदान वहन योजना"]] ||
+                row[headerMapping["anudan_name"]] ||
+                ""
+              )
+                .toString()
+                .trim(),
+              remark: (
+                row[headerMapping["रिमार्क"]] ||
+                row[headerMapping["remark"]] ||
+                ""
+              )
+                .toString()
+                .trim(),
               original_bill_date: convertToDisplayFormat(billDateRaw),
               bill_date: billDateISO,
               rowIndex: rowIndex + 2,
@@ -1892,6 +2157,14 @@ const Registration = () => {
                     parseFloat(row.amount_of_subsidy || 0) &&
                   parseFloat(existing.total_amount || 0) ===
                     parseFloat(row.total_amount || 0) &&
+                  parseFloat(existing.farmer_selling_rate || 0) ===
+                    parseFloat(row.farmer_selling_rate || 0) &&
+                  parseFloat(existing.farmer_subsidy_rate || 0) ===
+                    parseFloat(row.farmer_subsidy_rate || 0) &&
+                  String(existing.anudan_name || "").trim() ===
+                    String(row.anudan_name || "").trim() &&
+                  String(existing.remark || "").trim() ===
+                    String(row.remark || "").trim() &&
                   existing.bill_date === row.bill_date
                 );
               });
@@ -1912,7 +2185,7 @@ const Registration = () => {
             // Compare only fields that are in the template download
             const seenKeys = new Set();
             parsedRows.forEach((row) => {
-              const key = `${String(row.center_name || "").trim()}|${String(row.scheme_name || "").trim()}|${String(row.source_of_receipt || "").trim()}|${String(row.investment_name || "").trim()}|${String(row.sub_investment_name || "").trim()}|${String(row.unit || "").trim()}|${parseFloat(row.allocated_quantity || 0)}|${parseFloat(row.rate || 0)}|${parseFloat(row.amount_of_farmer_share || 0)}|${parseFloat(row.amount_of_subsidy || 0)}|${parseFloat(row.total_amount || 0)}|${row.bill_date}`;
+              const key = `${String(row.center_name || "").trim()}|${String(row.scheme_name || "").trim()}|${String(row.source_of_receipt || "").trim()}|${String(row.investment_name || "").trim()}|${String(row.sub_investment_name || "").trim()}|${String(row.unit || "").trim()}|${parseFloat(row.allocated_quantity || 0)}|${parseFloat(row.rate || 0)}|${parseFloat(row.farmer_selling_rate || 0)}|${parseFloat(row.farmer_subsidy_rate || 0)}|${parseFloat(row.amount_of_farmer_share || 0)}|${parseFloat(row.amount_of_subsidy || 0)}|${parseFloat(row.total_amount || 0)}|${String(row.anudan_name || "").trim()}|${String(row.remark || "").trim()}|${row.bill_date}`;
 
               if (seenKeys.has(key)) {
                 duplicateIndices.add(row.rowIndex);
@@ -2215,6 +2488,10 @@ const Registration = () => {
         amount_of_farmer_share: parseFloat(formData.amount_of_farmer_share),
         amount_of_subsidy: parseFloat(formData.amount_of_subsidy),
         total_amount: parseFloat(formData.total_amount),
+        farmer_selling_rate: parseFloat(formData.farmer_selling_rate) || 0,
+        farmer_subsidy_rate: parseFloat(formData.farmer_subsidy_rate) || 0,
+        anudan_name: formData.anudan_name,
+        remark: formData.remark,
         bill_date: convertToBackendFormat(formData.bill_date) || "",
       };
 
@@ -2240,6 +2517,10 @@ const Registration = () => {
         amount_of_farmer_share: "",
         amount_of_subsidy: "",
         total_amount: "",
+        farmer_selling_rate: "",
+        farmer_subsidy_rate: "",
+        anudan_name: "",
+        remark: "",
         bill_date: getTodayInDisplayFormat(),
       });
 
@@ -2274,6 +2555,8 @@ const Registration = () => {
       newErrors.center_name = `${translations.centerName} ${translations.required}`;
     if (!formData.investment_name.trim())
       newErrors.investment_name = `${translations.investmentName} ${translations.required}`;
+    if (!formData.sub_investment_name.trim())
+      newErrors.sub_investment_name = `${translations.subInvestmentName} ${translations.required}`;
     if (!formData.unit.trim())
       newErrors.unit = `${translations.unit} ${translations.required}`;
     if (!formData.allocated_quantity.trim())
@@ -2284,6 +2567,22 @@ const Registration = () => {
       newErrors.source_of_receipt = `${translations.sourceOfReceipt} ${translations.required}`;
     if (!formData.scheme_name.trim())
       newErrors.scheme_name = `${translations.schemeName} ${translations.required}`;
+    if (!formData.farmer_selling_rate.toString().trim())
+      newErrors.farmer_selling_rate = `${translations.farmerSellingRate} ${translations.required}`;
+    if (!formData.farmer_subsidy_rate.toString().trim())
+      newErrors.farmer_subsidy_rate = `${translations.farmerSubsidyRate} ${translations.required}`;
+    if (!formData.amount_of_farmer_share.toString().trim())
+      newErrors.amount_of_farmer_share = `${translations.amountOfFarmerShare} ${translations.required}`;
+    if (!formData.amount_of_subsidy.toString().trim())
+      newErrors.amount_of_subsidy = `${translations.amountOfSubsidy} ${translations.required}`;
+    if (!formData.total_amount.toString().trim())
+      newErrors.total_amount = `${translations.totalAmount} ${translations.required}`;
+    if (!formData.anudan_name.trim())
+      newErrors.anudan_name = `${translations.anudanName} ${translations.required}`;
+    if (!formData.remark.trim())
+      newErrors.remark = `${translations.remark} ${translations.required}`;
+    if (!formData.bill_date.trim())
+      newErrors.bill_date = `${translations.billDate} ${translations.required}`;
     if (!formData.vikas_khand_name.trim())
       newErrors.vikas_khand_name = `${translations.vikasKhandName} ${translations.required}`;
     if (!formData.vidhan_sabha_name.trim())
@@ -2486,18 +2785,18 @@ const Registration = () => {
                 <ul className="mb-0">
                   <li>कृपया सही फॉर्मेट में Excel फाइल अपलोड करें</li>
                   <li>
-                    <strong>अनिवार्य फ़ील्ड:</strong> केंद्र का नाम, निवेश का
-                    नाम, उप-निवेश का नाम, इकाई, आवंटित मात्रा, दर, सप्लायर,
-                    योजना का नाम, किसान का हिस्सा, सब्सिडी राशि, कुल राशि,
-                    पंजीकरण तिथि
+                    <strong>अनिवार्य फ़ील्ड:</strong> केंद्र का नाम, क्रय योजना का नाम, सप्लायर,
+                    मद का नाम, उप-मद का नाम, इकाई, आवंटित मात्रा , क्रय दर (प्रति इकाई),
+                    कृषक विक्रय दर (प्रति इकाई), कृषक अनुदान दर (प्रति इकाई), कृषक अंश,
+                    अनुदान राशि, कुल राशि, अनुदान वहन योजना, रिमार्क, पंजीकरण तिथि
                   </li>
                   <li>
                     <strong>स्वचालित:</strong> विकास खंड और विधानसभा स्वचालित
                     रूप से बैकएंड से सेट किए जाते हैं (Excel में शामिल न करें)
                   </li>
                   <li>
-                    आवंटित मात्रा, दर, किसान का हिस्सा, सब्सिडी राशि और कुल राशि
-                    संख्यात्मक होनी चाहिए
+                    आवंटित मात्रा , क्रय दर, कृषक विक्रय दर, कृषक अनुदान दर, कृषक अंश,
+                    अनुदान राशि और कुल राशि संख्यात्मक होनी चाहिए
                   </li>
                   <li>डाउनलोड टेम्पलेट बटन का उपयोग करें सही फॉर्मेट के लिए</li>
                 </ul>
@@ -2743,7 +3042,7 @@ const Registration = () => {
                           onChange={handleChange}
                           isInvalid={!!errors.allocated_quantity}
                           className="compact-input"
-                          placeholder="आवंटित मात्रा दर्ज करें"
+                          placeholder="आवंटित मात्रा  दर्ज करें"
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.allocated_quantity}
@@ -2767,6 +3066,54 @@ const Registration = () => {
                         />
                         <Form.Control.Feedback type="invalid">
                           {errors.rate}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12} sm={6} md={2}>
+                      <Form.Group
+                        className="mb-2"
+                        controlId="farmer_selling_rate"
+                      >
+                        <Form.Label className="small-fonts fw-bold">
+                          {translations.farmerSellingRate}
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="farmer_selling_rate"
+                          value={formData.farmer_selling_rate}
+                          onChange={handleChange}
+                          isInvalid={!!errors.farmer_selling_rate}
+                          className="compact-input"
+                          placeholder="कृषक विक्रय दर दर्ज करें"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.farmer_selling_rate}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12} sm={6} md={2}>
+                      <Form.Group
+                        className="mb-2"
+                        controlId="farmer_subsidy_rate"
+                      >
+                        <Form.Label className="small-fonts fw-bold">
+                          {translations.farmerSubsidyRate}
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          name="farmer_subsidy_rate"
+                          value={formData.farmer_subsidy_rate}
+                          onChange={handleChange}
+                          isInvalid={!!errors.farmer_subsidy_rate}
+                          className="compact-input"
+                          placeholder="कृषक अनुदान दर दर्ज करें"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.farmer_subsidy_rate}
                         </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
@@ -3046,9 +3393,13 @@ const Registration = () => {
                           name="amount_of_farmer_share"
                           value={formData.amount_of_farmer_share}
                           onChange={handleChange}
+                          isInvalid={!!errors.amount_of_farmer_share}
                           className="compact-input"
-                          placeholder="किसान का हिस्सा दर्ज करें"
+                          placeholder="कृषक अंश दर्ज करें"
                         />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.amount_of_farmer_share}
+                        </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
                     <Col xs={12} sm={6} md={2}>
@@ -3065,9 +3416,13 @@ const Registration = () => {
                           name="amount_of_subsidy"
                           value={formData.amount_of_subsidy}
                           onChange={handleChange}
+                          isInvalid={!!errors.amount_of_subsidy}
                           className="compact-input"
-                          placeholder="सब्सिडी राशि दर्ज करें"
+                          placeholder="अनुदान राशि दर्ज करें"
                         />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.amount_of_subsidy}
+                        </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
                   </Row>
@@ -3083,9 +3438,51 @@ const Registration = () => {
                           name="total_amount"
                           value={formData.total_amount}
                           onChange={handleChange}
+                          isInvalid={!!errors.total_amount}
                           className="compact-input"
                           placeholder="कुल राशि दर्ज करें"
                         />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.total_amount}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12} sm={6} md={2}>
+                      <Form.Group className="mb-2" controlId="anudan_name">
+                        <Form.Label className="small-fonts fw-bold">
+                          {translations.anudanName}
+                        </Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="anudan_name"
+                          value={formData.anudan_name}
+                          onChange={handleChange}
+                          isInvalid={!!errors.anudan_name}
+                          className="compact-input"
+                          placeholder="अनुदान वहन योजना दर्ज करें"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.anudan_name}
+                        </Form.Control.Feedback>
+                      </Form.Group>
+                    </Col>
+                    <Col xs={12} sm={6} md={2}>
+                      <Form.Group className="mb-2" controlId="remark">
+                        <Form.Label className="small-fonts fw-bold">
+                          {translations.remark}
+                        </Form.Label>
+                        <Form.Control
+                          type="text"
+                          name="remark"
+                          value={formData.remark}
+                          onChange={handleChange}
+                          isInvalid={!!errors.remark}
+                          className="compact-input"
+                          placeholder="रिमार्क दर्ज करें"
+                        />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.remark}
+                        </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
                     <Col xs={12} sm={6} md={2}>
@@ -3098,8 +3495,12 @@ const Registration = () => {
                           name="bill_date"
                           value={formData.bill_date}
                           onChange={handleChange}
+                          isInvalid={!!errors.bill_date}
                           className="compact-input"
                         />
+                        <Form.Control.Feedback type="invalid">
+                          {errors.bill_date}
+                        </Form.Control.Feedback>
                       </Form.Group>
                     </Col>
                     <Col
@@ -3646,51 +4047,11 @@ const Registration = () => {
                             />
                           </th>
                           <th>क्र.सं.</th>
-                          {/* Updated column order to match the requested sequence */}
-                          {selectedColumns.includes("center_name") && (
-                            <th>{translations.centerName}</th>
-                          )}
-                          {selectedColumns.includes("vidhan_sabha_name") && (
-                            <th>{translations.vidhanSabhaName}</th>
-                          )}
-                          {selectedColumns.includes("vikas_khand_name") && (
-                            <th>{translations.vikasKhandName}</th>
-                          )}
-                          {selectedColumns.includes("scheme_name") && (
-                            <th>{translations.schemeName}</th>
-                          )}
-                          {selectedColumns.includes("source_of_receipt") && (
-                            <th>{translations.sourceOfReceipt}</th>
-                          )}
-                          {selectedColumns.includes("investment_name") && (
-                            <th>{translations.investmentName}</th>
-                          )}
-                          {selectedColumns.includes("sub_investment_name") && (
-                            <th>{translations.subInvestmentName}</th>
-                          )}
-                          {selectedColumns.includes("unit") && (
-                            <th>{translations.unit}</th>
-                          )}
-                          {selectedColumns.includes("allocated_quantity") && (
-                            <th>{translations.allocatedQuantity}</th>
-                          )}
-                          {selectedColumns.includes("rate") && (
-                            <th>{translations.rate}</th>
-                          )}
-                          {selectedColumns.includes(
-                            "amount_of_farmer_share",
-                          ) && <th>{translations.amountOfFarmerShare}</th>}
-                          {selectedColumns.includes("amount_of_subsidy") && (
-                            <th>{translations.amountOfSubsidy}</th>
-                          )}
-                          {selectedColumns.includes("total_amount") && (
-                            <th>{translations.totalAmount}</th>
-                          )}
-                          {selectedColumns.includes("bill_date") && (
-                            <th>
-                              {billingTableColumnMapping.bill_date.header}
+                          {selectedColumns.map((col) => (
+                            <th key={col} style={{ whiteSpace: "pre-line" }}>
+                              {billingTableColumnMapping[col]?.header}
                             </th>
-                          )}
+                          ))}
                           <th>कार्रवाई</th>
                         </tr>
                       </thead>
@@ -3714,836 +4075,70 @@ const Registration = () => {
                               <td>
                                 {(currentPage - 1) * itemsPerPage + index + 1}
                               </td>
-                              {/* Updated column order to match the requested sequence */}
-                              {selectedColumns.includes("center_name") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Select
-                                      value={editingValues.center_name}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          center_name: value,
-                                          vikas_khand_name: "",
-                                          vidhan_sabha_name: "",
-                                        }));
-                                        if (value) {
-                                          fetchVikasKhandData(value);
-                                        }
-                                      }}
-                                      size="sm"
-                                    >
-                                      <option value="">चुनें</option>
-                                      {centerOptions.map((center, index) => (
-                                        <option key={index} value={center}>
-                                          {center}
-                                        </option>
-                                      ))}
-                                    </Form.Select>
-                                  ) : (
-                                    item.center_name
-                                  )}
+                              {selectedColumns.map((col) => (
+                                <td key={col} style={{ whiteSpace: "pre-line" }}>
+                                  {renderTableCell(item, col)}
                                 </td>
-                              )}
-                              {selectedColumns.includes(
-                                "vidhan_sabha_name",
-                              ) && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Select
-                                      value={editingValues.vidhan_sabha_name}
-                                      onChange={(e) =>
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          vidhan_sabha_name: e.target.value,
-                                        }))
-                                      }
-                                      size="sm"
-                                    >
-                                      <option value="">चुनें</option>
-                                      {filterOptions.vidhan_sabha_name.map(
-                                        (vidhan, index) => (
-                                          <option key={index} value={vidhan}>
-                                            {vidhan}
-                                          </option>
-                                        ),
-                                      )}
-                                    </Form.Select>
-                                  ) : (
-                                    item.vidhan_sabha_name
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("vikas_khand_name") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Select
-                                      value={editingValues.vikas_khand_name}
-                                      onChange={(e) =>
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          vikas_khand_name: e.target.value,
-                                        }))
-                                      }
-                                      size="sm"
-                                    >
-                                      <option value="">चुनें</option>
-                                      {filterOptions.vikas_khand_name.map(
-                                        (vikas, index) => (
-                                          <option key={index} value={vikas}>
-                                            {vikas}
-                                          </option>
-                                        ),
-                                      )}
-                                    </Form.Select>
-                                  ) : (
-                                    item.vikas_khand_name
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("scheme_name") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    editingOtherMode.scheme_name ? (
-                                      <div className="d-flex">
-                                        <Form.Control
-                                          type="text"
-                                          value={editingValues.scheme_name}
-                                          onChange={(e) =>
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              scheme_name: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="नया योजना का नाम दर्ज करें"
-                                          size="sm"
-                                        />
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          onClick={() =>
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              scheme_name: false,
-                                            }))
-                                          }
-                                        >
-                                          ✕
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Form.Select
-                                        value={editingValues.scheme_name}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          if (value === "Other") {
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              scheme_name: true,
-                                            }));
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              scheme_name: "",
-                                            }));
-                                          } else {
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              scheme_name: value,
-                                            }));
-                                          }
-                                        }}
-                                        size="sm"
-                                      >
-                                        <option value="">चुनें</option>
-                                        {getUniqueValues("scheme_name").map(
-                                          (scheme, index) => (
-                                            <option key={index} value={scheme}>
-                                              {scheme}
-                                            </option>
-                                          ),
-                                        )}
-                                        <option value="Other">
-                                          अन्य (Other)
-                                        </option>
-                                      </Form.Select>
-                                    )
-                                  ) : (
-                                    item.scheme_name
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes(
-                                "source_of_receipt",
-                              ) && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    editingOtherMode.source_of_receipt ? (
-                                      <div className="d-flex">
-                                        <Form.Control
-                                          type="text"
-                                          value={
-                                            editingValues.source_of_receipt
-                                          }
-                                          onChange={(e) =>
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              source_of_receipt: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="नया सप्लायर दर्ज करें"
-                                          size="sm"
-                                        />
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          onClick={() =>
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              source_of_receipt: false,
-                                            }))
-                                          }
-                                        >
-                                          ✕
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Form.Select
-                                        value={editingValues.source_of_receipt}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          if (value === "Other") {
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              source_of_receipt: true,
-                                            }));
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              source_of_receipt: "",
-                                            }));
-                                          } else {
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              source_of_receipt: value,
-                                            }));
-                                          }
-                                        }}
-                                        size="sm"
-                                      >
-                                        <option value="">चुनें</option>
-                                        {getUniqueValues(
-                                          "source_of_receipt",
-                                        ).map((source, index) => (
-                                          <option key={index} value={source}>
-                                            {source}
-                                          </option>
-                                        ))}
-                                        <option value="Other">
-                                          अन्य (Other)
-                                        </option>
-                                      </Form.Select>
-                                    )
-                                  ) : (
-                                    item.source_of_receipt
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("investment_name") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    editingOtherMode.investment_name ? (
-                                      <div className="d-flex">
-                                        <Form.Control
-                                          type="text"
-                                          value={editingValues.investment_name}
-                                          onChange={(e) =>
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              investment_name: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="नया निवेश का नाम दर्ज करें"
-                                          size="sm"
-                                        />
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          onClick={() =>
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              investment_name: false,
-                                            }))
-                                          }
-                                        >
-                                          ✕
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Form.Select
-                                        value={editingValues.investment_name}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          if (value === "Other") {
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              investment_name: true,
-                                            }));
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              investment_name: "",
-                                              sub_investment_name: "",
-                                              unit: "",
-                                            }));
-                                          } else {
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              investment_name: value,
-                                              sub_investment_name: "",
-                                              unit: "",
-                                            }));
-                                            if (value) {
-                                              fetchEditOptions(value);
-                                            }
-                                          }
-                                        }}
-                                        size="sm"
-                                      >
-                                        <option value="">चुनें</option>
-                                        {getUniqueValues("investment_name").map(
-                                          (inv, index) => (
-                                            <option key={index} value={inv}>
-                                              {inv}
-                                            </option>
-                                          ),
-                                        )}
-                                        <option value="Other">
-                                          अन्य (Other)
-                                        </option>
-                                      </Form.Select>
-                                    )
-                                  ) : (
-                                    item.investment_name
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes(
-                                "sub_investment_name",
-                              ) && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    editingOtherMode.sub_investment_name ? (
-                                      <div className="d-flex">
-                                        <Form.Control
-                                          type="text"
-                                          value={
-                                            editingValues.sub_investment_name
-                                          }
-                                          onChange={(e) =>
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              sub_investment_name:
-                                                e.target.value,
-                                            }))
-                                          }
-                                          placeholder="नया उप-निवेश का नाम दर्ज करें"
-                                          size="sm"
-                                        />
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          onClick={() =>
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              sub_investment_name: false,
-                                            }))
-                                          }
-                                        >
-                                          ✕
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Form.Select
-                                        value={
-                                          editingValues.sub_investment_name
-                                        }
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          if (value === "Other") {
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              sub_investment_name: true,
-                                            }));
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              sub_investment_name: "",
-                                            }));
-                                          } else {
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              sub_investment_name: value,
-                                            }));
-                                          }
-                                        }}
-                                        size="sm"
-                                      >
-                                        <option value="">चुनें</option>
-                                        {getUniqueValues(
-                                          "sub_investment_name",
-                                        ).map((subInv, index) => (
-                                          <option key={index} value={subInv}>
-                                            {subInv}
-                                          </option>
-                                        ))}
-                                        <option value="Other">
-                                          अन्य (Other)
-                                        </option>
-                                      </Form.Select>
-                                    )
-                                  ) : (
-                                    item.sub_investment_name
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("unit") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    editingOtherMode.unit ? (
-                                      <div className="d-flex">
-                                        <Form.Control
-                                          type="text"
-                                          value={editingValues.unit}
-                                          onChange={(e) =>
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              unit: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="नया इकाई दर्ज करें"
-                                          size="sm"
-                                        />
-                                        <Button
-                                          variant="outline-secondary"
-                                          size="sm"
-                                          onClick={() =>
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              unit: false,
-                                            }))
-                                          }
-                                        >
-                                          ✕
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <Form.Select
-                                        value={editingValues.unit}
-                                        onChange={(e) => {
-                                          const value = e.target.value;
-                                          if (value === "Other") {
-                                            setEditingOtherMode((prev) => ({
-                                              ...prev,
-                                              unit: true,
-                                            }));
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              unit: "",
-                                            }));
-                                          } else {
-                                            setEditingValues((prev) => ({
-                                              ...prev,
-                                              unit: value,
-                                            }));
-                                          }
-                                        }}
-                                        size="sm"
-                                      >
-                                        <option value="">चुनें</option>
-                                        {getUniqueValues("unit").map(
-                                          (unit, index) => (
-                                            <option key={index} value={unit}>
-                                              {unit}
-                                            </option>
-                                          ),
-                                        )}
-                                        <option value="Other">
-                                          अन्य (Other)
-                                        </option>
-                                      </Form.Select>
-                                    )
-                                  ) : (
-                                    item.unit
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes(
-                                "allocated_quantity",
-                              ) && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Control
-                                      type="number"
-                                      value={editingValues.allocated_quantity}
-                                      onChange={(e) =>
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          allocated_quantity: e.target.value,
-                                        }))
-                                      }
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    item.allocated_quantity
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("rate") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Control
-                                      type="number"
-                                      step="0.01"
-                                      value={editingValues.rate}
-                                      onChange={(e) =>
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          rate: e.target.value,
-                                        }))
-                                      }
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    item.rate
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes(
-                                "amount_of_farmer_share",
-                              ) && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Control
-                                      type="number"
-                                      step="0.01"
-                                      value={
-                                        editingValues.amount_of_farmer_share
-                                      }
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        const subsidy =
-                                          editingValues.amount_of_subsidy || 0;
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          amount_of_farmer_share: value,
-                                          total_amount:
-                                            (parseFloat(value) || 0) +
-                                            parseFloat(subsidy),
-                                        }));
-                                      }}
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    item.amount_of_farmer_share || 0
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes(
-                                "amount_of_subsidy",
-                              ) && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Control
-                                      type="number"
-                                      step="0.01"
-                                      value={editingValues.amount_of_subsidy}
-                                      onChange={(e) => {
-                                        const value = e.target.value;
-                                        const farmerShare =
-                                          editingValues.amount_of_farmer_share ||
-                                          0;
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          amount_of_subsidy: value,
-                                          total_amount:
-                                            parseFloat(farmerShare) +
-                                            (parseFloat(value) || 0),
-                                        }));
-                                      }}
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    item.amount_of_subsidy || 0
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("total_amount") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Control
-                                      type="number"
-                                      step="0.01"
-                                      value={editingValues.total_amount}
-                                      onChange={(e) =>
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          total_amount: e.target.value,
-                                        }))
-                                      }
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    item.total_amount || 0
-                                  )}
-                                </td>
-                              )}
-                              {selectedColumns.includes("bill_date") && (
-                                <td>
-                                  {editingRowId === item.id ? (
-                                    <Form.Control
-                                      type="date"
-                                      value={editingValues.bill_date || ""}
-                                      onChange={(e) =>
-                                        setEditingValues((prev) => ({
-                                          ...prev,
-                                          bill_date: e.target.value,
-                                        }))
-                                      }
-                                      size="sm"
-                                    />
-                                  ) : (
-                                    billingTableColumnMapping.bill_date.accessor(
-                                      item,
-                                    )
-                                  )}
-                                </td>
-                              )}
+                              ))}
                               <td>
                                 {editingRowId === item.id ? (
-                                  <>
+                                  <div className="d-flex gap-1">
                                     <Button
-                                      variant="outline-success"
+                                      variant="success"
                                       size="sm"
                                       onClick={() => handleSave(item)}
-                                      className="me-1"
                                     >
                                       सहेजें
                                     </Button>
                                     <Button
-                                      variant="outline-secondary"
+                                      variant="secondary"
                                       size="sm"
                                       onClick={handleCancel}
                                     >
                                       रद्द करें
                                     </Button>
-                                  </>
+                                  </div>
                                 ) : (
-                                  <>
-                                    <Button
-                                      variant="outline-primary"
-                                      size="sm"
-                                      onClick={() => handleEdit(item)}
-                                      className="me-1 gov-edit-btn"
+                                  <div className="d-flex gap-1">
+                                    <OverlayTrigger
+                                      placement="top"
+                                      overlay={<Tooltip>संपादित करें</Tooltip>}
                                     >
-                                      संपादित करें
-                                    </Button>
-                                    <Button
-                                      className="gov-delete-btn"
-                                      variant="outline-danger"
-                                      size="sm"
-                                      onClick={() => handleDelete(item)}
+                                      <Button
+                                        variant="outline-primary"
+                                        size="sm"
+                                        onClick={() => handleEdit(item)}
+                                      >
+                                        <RiEyeLine />
+                                      </Button>
+                                    </OverlayTrigger>
+                                    <OverlayTrigger
+                                      placement="top"
+                                      overlay={<Tooltip>हटाएं</Tooltip>}
                                     >
-                                      हटाएं
-                                    </Button>
-                                  </>
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        onClick={() => handleDelete(item)}
+                                      >
+                                        <RiDeleteBinLine />
+                                      </Button>
+                                    </OverlayTrigger>
+                                  </div>
                                 )}
                               </td>
                             </tr>
                           ))}
                       </tbody>
                       <tfoot>
-                        <tr className="table-total-row">
+                        <tr>
                           <td></td>
-                          <td>
-                            <strong>कुल</strong>
-                          </td>
-                          {selectedColumns.includes("center_name") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.center_name)
-                                      set.add(item.center_name);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
+                          <td><strong>कुल</strong></td>
+                          {selectedColumns.map((col) => (
+                            <td key={col}>
+                              <strong>{getColumnTotal(filteredItems, col)}</strong>
                             </td>
-                          )}
-                          {selectedColumns.includes("vidhan_sabha_name") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.vidhan_sabha_name)
-                                      set.add(item.vidhan_sabha_name);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("vikas_khand_name") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.vikas_khand_name)
-                                      set.add(item.vikas_khand_name);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("scheme_name") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.scheme_name)
-                                      set.add(item.scheme_name);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("source_of_receipt") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.source_of_receipt)
-                                      set.add(item.source_of_receipt);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("investment_name") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.investment_name)
-                                      set.add(item.investment_name);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("sub_investment_name") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.sub_investment_name)
-                                      set.add(item.sub_investment_name);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("unit") && (
-                            <td>
-                              <strong>
-                                {
-                                  filteredItems.reduce((unique, item) => {
-                                    const set = new Set(unique);
-                                    if (item.unit) set.add(item.unit);
-                                    return Array.from(set);
-                                  }, []).length
-                                }
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("allocated_quantity") && (
-                            <td>
-                              <strong>
-                                {filteredItems
-                                  .reduce((sum, item) => {
-                                    const qty =
-                                      parseFloat(item.allocated_quantity) || 0;
-                                    return sum + qty;
-                                  }, 0)
-                                  .toFixed(2)}
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("rate") && (
-                            <td>
-                              <strong>
-                                {filteredItems
-                                  .reduce((sum, item) => {
-                                    const rate = parseFloat(item.rate) || 0;
-                                    return sum + rate;
-                                  }, 0)
-                                  .toFixed(2)}
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes(
-                            "amount_of_farmer_share",
-                          ) && (
-                            <td>
-                              <strong>
-                                {filteredItems
-                                  .reduce((sum, item) => {
-                                    const share =
-                                      parseFloat(item.amount_of_farmer_share) ||
-                                      0;
-                                    return sum + share;
-                                  }, 0)
-                                  .toFixed(2)}
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("amount_of_subsidy") && (
-                            <td>
-                              <strong>
-                                {filteredItems
-                                  .reduce((sum, item) => {
-                                    const subsidy =
-                                      parseFloat(item.amount_of_subsidy) || 0;
-                                    return sum + subsidy;
-                                  }, 0)
-                                  .toFixed(2)}
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("total_amount") && (
-                            <td>
-                              <strong>
-                                {filteredItems
-                                  .reduce((sum, item) => {
-                                    const total =
-                                      parseFloat(item.total_amount) || 0;
-                                    return sum + total;
-                                  }, 0)
-                                  .toFixed(2)}
-                              </strong>
-                            </td>
-                          )}
-                          {selectedColumns.includes("bill_date") && <td></td>}
+                          ))}
                           <td></td>
                         </tr>
                       </tfoot>
@@ -4602,20 +4197,11 @@ const Registration = () => {
                   <thead>
                     <tr>
                       <th>क्र.सं.</th>
-                      <th>केंद्र का नाम</th>
-                      <th>विधानसभा का नाम</th>
-                      <th>विकास खंड का नाम</th>
-                      <th>योजना का नाम</th>
-                      <th>सप्लायर</th>
-                      <th>निवेश का नाम</th>
-                      <th>उप-निवेश का नाम</th>
-                      <th>इकाई</th>
-                      <th>आवंटित मात्रा</th>
-                      <th>दर</th>
-                      <th>किसान का हिस्सा</th>
-                      <th>सब्सिडी राशि</th>
-                      <th>कुल राशि</th>
-                      <th>पंजीकरण तिथि</th>
+                      {billingTableColumns.map((col) => (
+                        <th key={col.key} style={{ whiteSpace: "pre-line" }}>
+                          {col.label}
+                        </th>
+                      ))}
                     </tr>
                   </thead>
                   <tbody>
@@ -4623,94 +4209,19 @@ const Registration = () => {
                       <tr
                         key={idx}
                         style={{
-                          backgroundColor: duplicateRowIndices.includes(
-                            row.rowIndex,
-                          )
+                          backgroundColor: duplicateRowIndices.includes(row.rowIndex)
                             ? "#ffcccc"
                             : "inherit",
                         }}
                       >
                         <td>{idx + 1}</td>
-                        <td
-                          style={{
-                            backgroundColor: !row.center_name
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.center_name || "-"}
-                        </td>
-                        <td>{row.vidhan_sabha_name || "-"}</td>
-                        <td>{row.vikas_khand_name || "-"}</td>
-                        <td
-                          style={{
-                            backgroundColor: !row.scheme_name
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.scheme_name || "-"}
-                        </td>
-                        <td
-                          style={{
-                            backgroundColor: !row.source_of_receipt
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.source_of_receipt || "-"}
-                        </td>
-                        <td
-                          style={{
-                            backgroundColor: !row.investment_name
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.investment_name || "-"}
-                        </td>
-                        <td>{row.sub_investment_name || "-"}</td>
-                        <td
-                          style={{
-                            backgroundColor: !row.unit ? "#ffcccc" : "inherit",
-                          }}
-                        >
-                          {row.unit || "-"}
-                        </td>
-                        <td
-                          style={{
-                            backgroundColor: isNaN(
-                              parseInt(row.allocated_quantity),
-                            )
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.allocated_quantity || "-"}
-                        </td>
-                        <td
-                          style={{
-                            backgroundColor: isNaN(parseFloat(row.rate))
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.rate || "-"}
-                        </td>
-                        <td>{row.amount_of_farmer_share || "-"}</td>
-                        <td>{row.amount_of_subsidy || "-"}</td>
-                        <td>{row.total_amount || "-"}</td>
-                        <td
-                          style={{
-                            backgroundColor: !/^\d{2}\/\d{2}\/\d{4}$/.test(
-                              row.original_bill_date,
-                            )
-                              ? "#ffcccc"
-                              : "inherit",
-                          }}
-                        >
-                          {row.original_bill_date || "-"}
-                        </td>
+                        {billingTableColumns.map((col) => (
+                          <td key={col.key} style={{ whiteSpace: "pre-line" }}>
+                            {col.key === "bill_date"
+                              ? row.original_bill_date || "-"
+                              : billingTableColumnMapping[col.key]?.accessor(row, idx) || "-"}
+                          </td>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -4837,40 +4348,24 @@ const Registration = () => {
                 <thead>
                   <tr>
                     <th>क्र.सं. (Excel)</th>
-                    <th>केंद्र का नाम</th>
-                    <th>विधानसभा का नाम</th>
-                    <th>विकास खंड का नाम</th>
-                    <th>योजना का नाम</th>
-                    <th>इकाई</th>
-                    <th>सप्लायर</th>
-                    <th>निवेश का नाम</th>
-                    <th>उप-निवेश का नाम</th>
-                    <th>आवंटित मात्रा</th>
-                    <th>दर</th>
-                    <th>किसान का हिस्सा</th>
-                    <th>सब्सिडी राशि</th>
-                    <th>कुल राशि</th>
-                    <th>पंजीकरण तिथि</th>
+                    {billingTableColumns.map((col) => (
+                      <th key={col.key} style={{ whiteSpace: "pre-line" }}>
+                        {col.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
                   {allDuplicateEntries.map((row, idx) => (
                     <tr key={idx} style={{ backgroundColor: "#ffcccc" }}>
                       <td>{row.rowIndex - 1}</td>
-                      <td>{row.center_name || "-"}</td>
-                      <td>{row.vidhan_sabha_name || "-"}</td>
-                      <td>{row.vikas_khand_name || "-"}</td>
-                      <td>{row.scheme_name || "-"}</td>
-                      <td>{row.unit || "-"}</td>
-                      <td>{row.source_of_receipt || "-"}</td>
-                      <td>{row.investment_name || "-"}</td>
-                      <td>{row.sub_investment_name || "-"}</td>
-                      <td>{row.allocated_quantity || "-"}</td>
-                      <td>{row.rate || "-"}</td>
-                      <td>{row.amount_of_farmer_share || "-"}</td>
-                      <td>{row.amount_of_subsidy || "-"}</td>
-                      <td>{row.total_amount || "-"}</td>
-                      <td>{row.original_bill_date || "-"}</td>
+                      {billingTableColumns.map((col) => (
+                        <td key={col.key} style={{ whiteSpace: "pre-line" }}>
+                          {col.key === "bill_date"
+                            ? row.original_bill_date || "-"
+                            : billingTableColumnMapping[col.key]?.accessor(row, idx) || "-"}
+                        </td>
+                      ))}
                     </tr>
                   ))}
                 </tbody>
@@ -4895,20 +4390,11 @@ const Registration = () => {
               <thead>
                 <tr>
                   <th>क्र.सं.</th>
-                  <th>केंद्र का नाम</th>
-                  <th>विधानसभा का नाम</th>
-                  <th>विकास खंड का नाम</th>
-                  <th>योजना का नाम</th>
-                  <th>सप्लायर</th>
-                  <th>निवेश का नाम</th>
-                  <th>उप-निवेश का नाम</th>
-                  <th>इकाई</th>
-                  <th>आवंटित मात्रा</th>
-                  <th>दर</th>
-                  <th>किसान का हिस्सा</th>
-                  <th>सब्सिडी राशि</th>
-                  <th>कुल राशि</th>
-                  <th>पंजीकरण तिथि</th>
+                  {billingTableColumns.map((col) => (
+                    <th key={col.key} style={{ whiteSpace: "pre-line" }}>
+                      {col.label}
+                    </th>
+                  ))}
                   <th>त्रुटि</th>
                 </tr>
               </thead>
@@ -4916,28 +4402,13 @@ const Registration = () => {
                 {failedRows.slice(0, 20).map((row, idx) => (
                   <tr key={idx}>
                     <td>{idx + 1}</td>
-                    <td>{row.data?.center_name || "-"}</td>
-                    <td>{row.data?.vidhan_sabha_name || "-"}</td>
-                    <td>{row.data?.vikas_khand_name || "-"}</td>
-                    <td>{row.data?.scheme_name || "-"}</td>
-                    <td>{row.data?.source_of_receipt || "-"}</td>
-                    <td>{row.data?.investment_name || "-"}</td>
-                    <td>{row.data?.sub_investment_name || "-"}</td>
-                    <td>{row.data?.unit || "-"}</td>
-                    <td>{row.data?.allocated_quantity || "-"}</td>
-                    <td>{row.data?.rate || "-"}</td>
-                    <td>{row.data?.amount_of_farmer_share || "-"}</td>
-                    <td>{row.data?.amount_of_subsidy || "-"}</td>
-                    <td>{row.data?.total_amount || "-"}</td>
-                    <td
-                      style={{
-                        backgroundColor: row.reason?.includes("तिथि")
-                          ? "#ffcccc"
-                          : "inherit",
-                      }}
-                    >
-                      {row.data?.original_bill_date || "-"}
-                    </td>
+                    {billingTableColumns.map((col) => (
+                      <td key={col.key} style={{ whiteSpace: "pre-line" }}>
+                        {col.key === "bill_date"
+                          ? row.data?.original_bill_date || "-"
+                          : billingTableColumnMapping[col.key]?.accessor(row.data || {}, idx) || "-"}
+                      </td>
+                    ))}
                     <td>{row.reason}</td>
                   </tr>
                 ))}
