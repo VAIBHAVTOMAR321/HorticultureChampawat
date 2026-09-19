@@ -38,13 +38,11 @@ import {
 
 // API URLs
 const BILLING_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 const VIKAS_KHAND_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/get-vikas-khand-by-center/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/get-vikas-khand-by-center/";
 const FORM_FILTERS_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/billing-form-filters/";
-const CENTERS_API_URL =
-  "https://mahadevaaya.com/govbillingsystem/backend/api/centers/";
+  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-form-filters/";
 
 // Utility function to round numbers to 2 decimal places
 const roundTo2Decimals = (value) => {
@@ -450,22 +448,9 @@ const Registration = () => {
     return [...new Set(values)].sort();
   };
 
-  // Fetch center options from backend
+  // Center options are derived from local mapping
   const fetchCenterOptions = async () => {
-    try {
-      const response = await axios.get(CENTERS_API_URL);
-      const centers = response.data || [];
-      if (Array.isArray(centers) && centers.length > 0) {
-        setCenterOptions(centers);
-      } else {
-        // Fallback to new mapping center names if API returns empty or invalid data
-        setCenterOptions(validKendraNames);
-      }
-    } catch (error) {
-      console.error("Error fetching center options:", error);
-      // Fallback to new mapping center names if API fails
-      setCenterOptions(validKendraNames);
-    }
+    setCenterOptions(validKendraNames);
   };
 
   // Fetch billing items data
@@ -506,7 +491,7 @@ const Registration = () => {
     }
   };
 
-  // Fetch vikas khand data based on center (using local mapping instead of API)
+  // Fetch vikas khand data based on center
   const fetchVikasKhandData = async (centerName) => {
     if (!centerName) {
       setVikasKhandData(null);
@@ -522,39 +507,57 @@ const Registration = () => {
       setIsFetchingVikasKhand(true);
       console.log("Fetching vikas khand for center:", centerName);
 
-      // Use local mapping instead of API
-      const mapping = centerToVikasKhandVidhanSabha[centerName];
-      
+      // Try API first
       let vikasData = null;
-      if (mapping) {
-        vikasData = mapping;
+      try {
+        const response = await axios.get(
+          `${VIKAS_KHAND_API_URL}?center_name=${encodeURIComponent(centerName)}`,
+        );
+        let data = response.data;
+        console.log("API response:", data);
+
+        if (Array.isArray(data) && data.length > 0) {
+          vikasData = data[0];
+        } else if (data && typeof data === "object") {
+          if (data.vikas_khand_name || data.vidhan_sabha_name) {
+            vikasData = data;
+          } else if (data.data && typeof data.data === "object") {
+            vikasData = data.data;
+          }
+        }
+      } catch (apiError) {
+        console.warn("API call failed, falling back to local mapping:", apiError);
+      }
+
+      // Fallback to local mapping if API fails or returns no data
+      if (!vikasData) {
+        const mapping = centerToVikasKhandVidhanSabha[centerName];
+        if (mapping) {
+          vikasData = mapping;
+        }
       }
 
       console.log("Extracted vikas data:", vikasData);
 
       if (vikasData) {
         setVikasKhandData(vikasData);
-        // Update form data immediately
         setFormData((prev) => ({
           ...prev,
           vikas_khand_name: vikasData.vikas_khand_name || "",
           vidhan_sabha_name: vikasData.vidhan_sabha_name || "",
-          scheme_name: "MGNREGA", // Set default scheme_name
+          scheme_name: "MGNREGA",
         }));
-        // Update editing values if editing
         if (editingRowId) {
           setEditingValues((prev) => ({
             ...prev,
             vikas_khand_name: vikasData.vikas_khand_name || "",
             vidhan_sabha_name: vikasData.vidhan_sabha_name || "",
-            scheme_name: "MGNREGA", // Set default scheme_name
+            scheme_name: "MGNREGA",
           }));
         }
         console.log("Form data updated with:", vikasData);
-        // Clear any previous error
         setApiError(null);
       } else {
-        // Show an error message when no data is found
         setApiError(`No vikas khand data found for center: ${centerName}`);
         setVikasKhandData(null);
         setFormData((prev) => ({
@@ -1372,7 +1375,7 @@ const Registration = () => {
       setIsLoading(true);
       const payload = { bill_id: selectedItems };
       await axios.delete(
-        "https://mahadevaaya.com/govbillingsystem/backend/api/billing-items/",
+        "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/",
         { data: payload },
       );
 
@@ -2303,7 +2306,26 @@ const Registration = () => {
       for (let i = 0; i < validRows.length; i++) {
         try {
           const rowData = validRows[i];
-          const { rowIndex, _originalIndex, ...payload } = rowData;
+          const payload = {
+            center_name: rowData.center_name || "",
+            investment_name: rowData.investment_name || "",
+            sub_investment_name: rowData.sub_investment_name || "",
+            unit: rowData.unit || "",
+            allocated_quantity: parseInt(rowData.allocated_quantity) || 0,
+            rate: parseFloat(rowData.rate) || 0,
+            source_of_receipt: rowData.source_of_receipt || "",
+            scheme_name: rowData.scheme_name || "",
+            vidhan_sabha_name: "",
+            vikas_khand_name: "",
+            amount_of_farmer_share: parseFloat(rowData.amount_of_farmer_share) || 0,
+            amount_of_subsidy: parseFloat(rowData.amount_of_subsidy) || 0,
+            total_amount: parseFloat(rowData.total_amount) || 0,
+            farmer_selling_rate: parseFloat(rowData.farmer_selling_rate) || 0,
+            farmer_subsidy_rate: parseFloat(rowData.farmer_subsidy_rate) || 0,
+            anudan_name: rowData.anudan_name || "",
+            remark: rowData.remark || "",
+            bill_date: rowData.bill_date || "",
+          };
 
           const response = await axios.post(BILLING_API_URL, payload);
 
