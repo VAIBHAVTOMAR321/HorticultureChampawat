@@ -1685,7 +1685,43 @@ const Registration = () => {
     if (!rowData.scheme_name || !rowData.scheme_name.toString().trim()) {
       errors.push(`Row ${rowIndex}: क्रय योजना का नाम आवश्यक है`);
     }
-    // NOTE: vikas_khand_name and vidhan_sabha_name are NOT required for bulk upload - they are set in backend
+    if (!rowData.sub_investment_name || !rowData.sub_investment_name.toString().trim()) {
+      errors.push(`Row ${rowIndex}: उप-मद आवश्यक है`);
+    }
+    if (!rowData.farmer_selling_rate || !rowData.farmer_selling_rate.toString().trim()) {
+      errors.push(`Row ${rowIndex}: कृषक विक्रय दर आवश्यक है`);
+    } else if (isNaN(parseFloat(rowData.farmer_selling_rate))) {
+      errors.push(`Row ${rowIndex}: कृषक विक्रय दर एक संख्या होनी चाहिए`);
+    }
+    if (!rowData.farmer_subsidy_rate || !rowData.farmer_subsidy_rate.toString().trim()) {
+      errors.push(`Row ${rowIndex}: कृषक अनुदान दर आवश्यक है`);
+    } else if (isNaN(parseFloat(rowData.farmer_subsidy_rate))) {
+      errors.push(`Row ${rowIndex}: कृषक अनुदान दर एक संख्या होनी चाहिए`);
+    }
+    if (!rowData.amount_of_farmer_share || !rowData.amount_of_farmer_share.toString().trim()) {
+      errors.push(`Row ${rowIndex}: कृषक अंश आवश्यक है`);
+    } else if (isNaN(parseFloat(rowData.amount_of_farmer_share))) {
+      errors.push(`Row ${rowIndex}: कृषक अंश एक संख्या होनी चाहिए`);
+    }
+    if (!rowData.amount_of_subsidy || !rowData.amount_of_subsidy.toString().trim()) {
+      errors.push(`Row ${rowIndex}: अनुदान राशि आवश्यक है`);
+    } else if (isNaN(parseFloat(rowData.amount_of_subsidy))) {
+      errors.push(`Row ${rowIndex}: अनुदान राशि एक संख्या होनी चाहिए`);
+    }
+    if (!rowData.total_amount || !rowData.total_amount.toString().trim()) {
+      errors.push(`Row ${rowIndex}: कुल राशि आवश्यक है`);
+    } else if (isNaN(parseFloat(rowData.total_amount))) {
+      errors.push(`Row ${rowIndex}: कुल राशि एक संख्या होनी चाहिए`);
+    }
+    if (!rowData.anudan_name || !rowData.anudan_name.toString().trim()) {
+      errors.push(`Row ${rowIndex}: अनुदान वहन योजना आवश्यक है`);
+    }
+    if (!rowData.remark || !rowData.remark.toString().trim()) {
+      errors.push(`Row ${rowIndex}: रिमार्क आवश्यक है`);
+    }
+    if (!rowData.bill_date || !rowData.bill_date.toString().trim()) {
+      errors.push(`Row ${rowIndex}: पंजीकरण तिथि आवश्यक है`);
+    }
 
     return errors;
   };
@@ -2306,7 +2342,8 @@ const Registration = () => {
       for (let i = 0; i < validRows.length; i++) {
         try {
           const rowData = validRows[i];
-          const payload = {
+          const vikasMapping = centerToVikasKhandVidhanSabha[rowData.center_name] || {};
+          const rowPayload = {
             center_name: rowData.center_name || "",
             investment_name: rowData.investment_name || "",
             sub_investment_name: rowData.sub_investment_name || "",
@@ -2315,8 +2352,8 @@ const Registration = () => {
             rate: parseFloat(rowData.rate) || 0,
             source_of_receipt: rowData.source_of_receipt || "",
             scheme_name: rowData.scheme_name || "",
-            vidhan_sabha_name: "",
-            vikas_khand_name: "",
+            vidhan_sabha_name: vikasMapping.vidhan_sabha_name || null,
+            vikas_khand_name: vikasMapping.vikas_khand_name || null,
             amount_of_farmer_share: parseFloat(rowData.amount_of_farmer_share) || 0,
             amount_of_subsidy: parseFloat(rowData.amount_of_subsidy) || 0,
             total_amount: parseFloat(rowData.total_amount) || 0,
@@ -2324,19 +2361,23 @@ const Registration = () => {
             farmer_subsidy_rate: parseFloat(rowData.farmer_subsidy_rate) || 0,
             anudan_name: rowData.anudan_name || "",
             remark: rowData.remark || "",
-            bill_date: rowData.bill_date || "",
+            bill_date: convertToBackendFormat(rowData.bill_date) || "",
           };
 
-          const response = await axios.post(BILLING_API_URL, payload);
+          console.log("Bulk upload payload for row", rowData.rowIndex, ":", JSON.stringify(rowPayload, null, 2));
+
+          const response = await axios.post(BILLING_API_URL, rowPayload);
+
+          console.log("Bulk upload response for row", rowData.rowIndex, ":", response.status, JSON.stringify(response.data));
 
           if (response.status === 200 || response.status === 201) {
             successCount++;
-            setAllBillingItems((prev) => [payload, ...prev]);
+            setAllBillingItems((prev) => [rowPayload, ...prev]);
           } else {
             failedItems.push({
               rowIndex: rowData.rowIndex,
               data: rowData,
-              reason: "Upload failed",
+              reason: "Upload failed with status " + response.status,
             });
           }
         } catch (error) {
@@ -2344,8 +2385,10 @@ const Registration = () => {
           const errorMsg =
             error.response?.data?.message ||
             error.response?.data?.error ||
-            error.message ||
+            (error.response ? "HTTP " + error.response.status + " - " + JSON.stringify(error.response.data) : error.message) ||
             "Upload failed";
+
+          console.error("Bulk upload error for row", rowIndex, ":", errorMsg, error.response?.data);
 
           failedItems.push({
             rowIndex,
