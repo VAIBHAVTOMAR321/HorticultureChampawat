@@ -2355,7 +2355,7 @@ const Registration = () => {
             investment_name: rowData.investment_name || "",
             sub_investment_name: rowData.sub_investment_name || "",
             unit: rowData.unit || "",
-            allocated_quantity: parseInt(rowData.allocated_quantity) || 0,
+            allocated_quantity: roundTo2Decimals(rowData.allocated_quantity),
             rate: parseFloat(rowData.rate) || 0,
             source_of_receipt: rowData.source_of_receipt || "",
             scheme_name: rowData.scheme_name || "",
