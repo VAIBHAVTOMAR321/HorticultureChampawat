@@ -3445,7 +3445,7 @@ const Dashboard = () => {
         setLoading(true);
         setError(null);
         
-        const response = await fetch("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/", {
+        const response = await fetch("https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/", {
           headers: {
             Accept: "application/json",
           },

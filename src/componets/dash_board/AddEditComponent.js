@@ -25,9 +25,9 @@ import LeftNav from "./LeftNav";
 
 // API URLs
 const COMPONENT_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/component-list/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/component-list/";
 const SCHEME_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/scheme-list/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/scheme-list/";
 
 // Hindi translations
 const translations = {
@@ -315,7 +315,7 @@ const AddEditComponent = () => {
   const fetchBillingItems = async () => {
     setBillingItemsLoading(true);
     try {
-      const resp = await axios.get("https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/");
+      const resp = await axios.get("https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/");
       setBillingItems(resp.data || []);
 
       // Extract unique values from billing-items API for consistency

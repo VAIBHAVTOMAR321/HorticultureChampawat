@@ -173,7 +173,7 @@ function AdminKishanAavedan() {
 
     try {
       const response = await fetch(
-        'https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/all-kisan-applications/'
+        'https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/all-kisan-applications/'
       );
 
       if (!response.ok) {

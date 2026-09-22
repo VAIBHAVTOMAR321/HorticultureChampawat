@@ -45,7 +45,7 @@ const LeftNav = ({
   //   setError(null);
   //   try {
   //     const response = await axios.get(
-  //       "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/"
+  //       "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/"
   //     );
   //     setApiData(response.data);
       

@@ -27,7 +27,7 @@ import {
 import "../../assets/css/dashboard.css";
 
 const API_BASE_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/salary-attendance-reports/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/salary-attendance-reports/";
 
 // 12 Months List (January to December)
 const MONTH_OPTIONS = [

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "./UdyanBill.css";
 
-const API_BASE = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/udyan";
+const API_BASE = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/udyan";
 
 /* =========================================================
     API HELPERS
@@ -634,7 +634,7 @@ export default function UdyanBill() {
 
     try {
       const response = await apiFetch(
-        "https://mahadevaaya.com/govbillingsystem/backend/api/centres/",
+        "https://horticulturechampawat.in/govbillingsystem/backend/api/centres/",
       );
 
       const data = await readJsonResponse(response);

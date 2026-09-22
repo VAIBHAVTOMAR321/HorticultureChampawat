@@ -14,7 +14,7 @@ function NavBar() {
   //   const fetchJobOpenings = async () => {
   //     try {
   //       const res = await axios.get(
-  //         "https://mahadevaaya.com/brainrock.in/brainrock/backendbr/api/job-opening/"
+  //         "https://horticulturechampawat.in/brainrock.in/brainrock/backendbr/api/job-opening/"
   //       );
 
   //       if (Array.isArray(res.data) && res.data.length > 0) {

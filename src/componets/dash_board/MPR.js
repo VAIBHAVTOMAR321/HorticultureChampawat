@@ -11,8 +11,8 @@ import DashBoardHeader from "./DashBoardHeader";
 import LeftNav from "./LeftNav";
 
 // API URLs
-const YEARLY_DATA_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
-const MONTHLY_DATA_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/report-billing-items/";
+const YEARLY_DATA_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/";
+const MONTHLY_DATA_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/report-billing-items/";
 
 // Helper function to format numbers as currency
 const formatCurrency = (amount) => {
@@ -1086,7 +1086,7 @@ const downloadExcel = (data, filename, columnMapping, selectedColumns, includeTo
   // View receipt file
   const viewReceipt = (receiptPath) => {
     if (receiptPath) {
-      const fullUrl = `https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/${receiptPath}`;
+      const fullUrl = `https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/${receiptPath}`;
       window.open(fullUrl, '_blank');
     }
   };

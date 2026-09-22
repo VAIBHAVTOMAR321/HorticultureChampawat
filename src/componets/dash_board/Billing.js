@@ -23,9 +23,9 @@ import Footer from "../footer/Footer";
 
 // API URLs
 const GET_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 const UPDATE_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/update-billing-item/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/update-billing-item/";
 
 // Custom styles for react-select
 const customSelectStyles = {

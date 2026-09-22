@@ -23,13 +23,13 @@ import { useAuth } from "../context/AuthContext";
 import "./GetViewLibrary.css";
 
 const LIBRARY_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/library";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/library";
 const LIBRARY_CATEGORIES_API_URL = `${LIBRARY_API_URL}/categories`;
 const CENTER_LINKS_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-links";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/center-links";
 const DETAILS_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/center-link-details-bycenter";
-const MEDIA_BASE_URL = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/center-link-details-bycenter";
+const MEDIA_BASE_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend";
 
 const getToken = () =>
   localStorage.getItem("access_token") || localStorage.getItem("token");

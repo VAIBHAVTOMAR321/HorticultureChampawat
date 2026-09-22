@@ -38,11 +38,11 @@ import {
 
 // API URLs
 const BILLING_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/";
 const VIKAS_KHAND_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/get-vikas-khand-by-center/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/get-vikas-khand-by-center/";
 const FORM_FILTERS_API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-form-filters/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-form-filters/";
 
 // Utility function to round numbers to 2 decimal places
 const roundTo2Decimals = (value) => {
@@ -1378,7 +1378,7 @@ const Registration = () => {
       setIsLoading(true);
       const payload = { bill_id: selectedItems };
       await axios.delete(
-        "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/billing-items/",
+        "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-items/",
         { data: payload },
       );
 

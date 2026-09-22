@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import ExcelJS from "exceljs";
 import "./MonthReport.css";
 const API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/month-reports/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/month-reports/";
 
 /*
   Excel file is intentionally NOT fetched from /media directly.
@@ -12,7 +12,7 @@ const API_URL =
   Example:
     /api/month-reports/8/file/
 */
-const MEDIA_BASE_URL ="https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
+const MEDIA_BASE_URL ="https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend";
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
 const months = [
@@ -1241,7 +1241,7 @@ const fetchReportFile = async (report) => {
       GET /api/month-reports/{id}/file/
 
     Example:
-      https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/month-reports/8/file/
+      https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/month-reports/8/file/
   */
   const fileUrl = `${API_URL}${report.id}/`;
 
@@ -1329,10 +1329,10 @@ const updateReportFile = async ({ id, month, financialYear, file }) => {
 
   /*
     PUT endpoint:
-    https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/month-reports/{id}/
+    https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/month-reports/{id}/
 
     Example for report ID 8:
-    https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/month-reports/8/
+    https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/month-reports/8/
 
     Do not manually set Content-Type. The browser creates the
     multipart/form-data boundary automatically.

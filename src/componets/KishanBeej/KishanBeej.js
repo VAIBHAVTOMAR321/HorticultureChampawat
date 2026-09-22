@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import "./KishanBeej.css";
 
 const API =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/kishanbeej";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/kishanbeej";
 
 const today = () => new Date().toISOString().slice(0, 10);
 

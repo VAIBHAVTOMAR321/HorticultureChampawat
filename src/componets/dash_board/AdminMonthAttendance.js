@@ -14,9 +14,9 @@ import Footer from "../footer/Footer";
 import "../../assets/css/dashboard.css";
 
 const API_URL =
-  "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend/api/month-attendance-reports/";
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/month-attendance-reports/";
 
-const BACKEND_BASE = "https://mahadevaaya.com/champawathorticulture/champawathorticulture_backend";
+const BACKEND_BASE = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend";
 
 // The API returns the Excel workbook directly from /{id}/.
 // Example: /api/month-attendance-reports/6/
