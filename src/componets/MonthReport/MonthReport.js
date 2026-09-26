@@ -12,7 +12,9 @@ const YOJANA_API_URL =
 const MEDIA_BASE_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend";
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
+
 const months = [
+
   { value: "1", label: "January" },
   { value: "2", label: "February" },
   { value: "3", label: "March" },
