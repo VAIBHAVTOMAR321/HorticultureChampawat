@@ -1661,22 +1661,24 @@ const Registration = () => {
     if (!rowData.unit || !rowData.unit.toString().trim()) {
       errors.push(`Row ${rowIndex}: इकाई आवश्यक है`);
     }
+    const allocatedQty = rowData.allocated_quantity;
     if (
-      rowData.allocated_quantity === "" ||
-      rowData.allocated_quantity === null ||
-      rowData.allocated_quantity === undefined
+      allocatedQty === "" ||
+      allocatedQty === null ||
+      allocatedQty === undefined
     ) {
       errors.push(`Row ${rowIndex}: आवंटित मात्रा आवश्यक है`);
-    } else if (isNaN(parseInt(rowData.allocated_quantity))) {
+    } else if (isNaN(parseInt(allocatedQty))) {
       errors.push(`Row ${rowIndex}: आवंटित मात्रा एक संख्या होनी चाहिए`);
     }
+    const rateVal = rowData.rate;
     if (
-      rowData.rate === "" ||
-      rowData.rate === null ||
-      rowData.rate === undefined
+      rateVal === "" ||
+      rateVal === null ||
+      rateVal === undefined
     ) {
       errors.push(`Row ${rowIndex}: क्रय दर आवश्यक है`);
-    } else if (isNaN(parseFloat(rowData.rate))) {
+    } else if (isNaN(parseFloat(rateVal))) {
       errors.push(`Row ${rowIndex}: क्रय दर एक संख्या होनी चाहिए`);
     }
     if (
@@ -1691,29 +1693,54 @@ const Registration = () => {
     if (!rowData.sub_investment_name || !rowData.sub_investment_name.toString().trim()) {
       errors.push(`Row ${rowIndex}: उप-मद आवश्यक है`);
     }
-    if (!rowData.farmer_selling_rate || !rowData.farmer_selling_rate.toString().trim()) {
+    const fsRate = rowData.farmer_selling_rate;
+    if (
+      fsRate === "" ||
+      fsRate === null ||
+      fsRate === undefined
+    ) {
       errors.push(`Row ${rowIndex}: कृषक विक्रय दर आवश्यक है`);
-    } else if (isNaN(parseFloat(rowData.farmer_selling_rate))) {
+    } else if (isNaN(parseFloat(fsRate))) {
       errors.push(`Row ${rowIndex}: कृषक विक्रय दर एक संख्या होनी चाहिए`);
     }
-    if (!rowData.farmer_subsidy_rate || !rowData.farmer_subsidy_rate.toString().trim()) {
+    const fsubRate = rowData.farmer_subsidy_rate;
+    if (
+      fsubRate === "" ||
+      fsubRate === null ||
+      fsubRate === undefined
+    ) {
       errors.push(`Row ${rowIndex}: कृषक अनुदान दर आवश्यक है`);
-    } else if (isNaN(parseFloat(rowData.farmer_subsidy_rate))) {
+    } else if (isNaN(parseFloat(fsubRate))) {
       errors.push(`Row ${rowIndex}: कृषक अनुदान दर एक संख्या होनी चाहिए`);
     }
-    if (!rowData.amount_of_farmer_share || !rowData.amount_of_farmer_share.toString().trim()) {
+    const farmerShare = rowData.amount_of_farmer_share;
+    if (
+      farmerShare === "" ||
+      farmerShare === null ||
+      farmerShare === undefined
+    ) {
       errors.push(`Row ${rowIndex}: कृषक अंश आवश्यक है`);
-    } else if (isNaN(parseFloat(rowData.amount_of_farmer_share))) {
+    } else if (isNaN(parseFloat(farmerShare))) {
       errors.push(`Row ${rowIndex}: कृषक अंश एक संख्या होनी चाहिए`);
     }
-    if (!rowData.amount_of_subsidy || !rowData.amount_of_subsidy.toString().trim()) {
+    const subsidy = rowData.amount_of_subsidy;
+    if (
+      subsidy === "" ||
+      subsidy === null ||
+      subsidy === undefined
+    ) {
       errors.push(`Row ${rowIndex}: अनुदान राशि आवश्यक है`);
-    } else if (isNaN(parseFloat(rowData.amount_of_subsidy))) {
+    } else if (isNaN(parseFloat(subsidy))) {
       errors.push(`Row ${rowIndex}: अनुदान राशि एक संख्या होनी चाहिए`);
     }
-    if (!rowData.total_amount || !rowData.total_amount.toString().trim()) {
+    const totalAmt = rowData.total_amount;
+    if (
+      totalAmt === "" ||
+      totalAmt === null ||
+      totalAmt === undefined
+    ) {
       errors.push(`Row ${rowIndex}: कुल राशि आवश्यक है`);
-    } else if (isNaN(parseFloat(rowData.total_amount))) {
+    } else if (isNaN(parseFloat(totalAmt))) {
       errors.push(`Row ${rowIndex}: कुल राशि एक संख्या होनी चाहिए`);
     }
     if (!rowData.anudan_name || !rowData.anudan_name.toString().trim()) {
@@ -2631,23 +2658,30 @@ const Registration = () => {
       newErrors.sub_investment_name = `${translations.subInvestmentName} ${translations.required}`;
     if (!formData.unit.trim())
       newErrors.unit = `${translations.unit} ${translations.required}`;
-    if (!formData.allocated_quantity.trim())
+    const allocatedQty = formData.allocated_quantity;
+    if (allocatedQty === "" || allocatedQty === null || allocatedQty === undefined)
       newErrors.allocated_quantity = `${translations.allocatedQuantity} ${translations.required}`;
-    if (!formData.rate.trim())
+    const rateVal = formData.rate;
+    if (rateVal === "" || rateVal === null || rateVal === undefined)
       newErrors.rate = `${translations.rate} ${translations.required}`;
     if (!formData.source_of_receipt.trim())
       newErrors.source_of_receipt = `${translations.sourceOfReceipt} ${translations.required}`;
     if (!formData.scheme_name.trim())
       newErrors.scheme_name = `${translations.schemeName} ${translations.required}`;
-    if (!formData.farmer_selling_rate.toString().trim())
+    const fsRate = formData.farmer_selling_rate;
+    if (fsRate === "" || fsRate === null || fsRate === undefined)
       newErrors.farmer_selling_rate = `${translations.farmerSellingRate} ${translations.required}`;
-    if (!formData.farmer_subsidy_rate.toString().trim())
+    const fsubRate = formData.farmer_subsidy_rate;
+    if (fsubRate === "" || fsubRate === null || fsubRate === undefined)
       newErrors.farmer_subsidy_rate = `${translations.farmerSubsidyRate} ${translations.required}`;
-    if (!formData.amount_of_farmer_share.toString().trim())
+    const farmerShare = formData.amount_of_farmer_share;
+    if (farmerShare === "" || farmerShare === null || farmerShare === undefined)
       newErrors.amount_of_farmer_share = `${translations.amountOfFarmerShare} ${translations.required}`;
-    if (!formData.amount_of_subsidy.toString().trim())
+    const subsidy = formData.amount_of_subsidy;
+    if (subsidy === "" || subsidy === null || subsidy === undefined)
       newErrors.amount_of_subsidy = `${translations.amountOfSubsidy} ${translations.required}`;
-    if (!formData.total_amount.toString().trim())
+    const totalAmt = formData.total_amount;
+    if (totalAmt === "" || totalAmt === null || totalAmt === undefined)
       newErrors.total_amount = `${translations.totalAmount} ${translations.required}`;
     if (!formData.anudan_name.trim())
       newErrors.anudan_name = `${translations.anudanName} ${translations.required}`;
