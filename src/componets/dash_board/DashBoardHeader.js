@@ -31,7 +31,7 @@ function DashBoardHeader() {
         <Navbar.Brand as={Link} to="/Dashboard">
           <div className="dash-img d-flex justify-content-between mx-2">
             <img src={UKSasan} className="img-fluid" alt="UK Sasan" />
-            <p>Champawat</p>
+            <p>चम्पावत</p>
           </div>
         </Navbar.Brand>
         <Navbar.Toggle aria-controls="basic-navbar-nav" />
