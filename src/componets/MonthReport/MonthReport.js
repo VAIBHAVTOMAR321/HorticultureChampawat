@@ -12,9 +12,7 @@ const YOJANA_API_URL =
 const MEDIA_BASE_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend";
 const MAX_FILE_SIZE = 25 * 1024 * 1024;
 
-
 const months = [
-
   { value: "1", label: "January" },
   { value: "2", label: "February" },
   { value: "3", label: "March" },
@@ -1173,9 +1171,9 @@ const DashboardTab = ({ report }) => {
 
   const cards = [
     { label: "कुल बजट", value: totals.budget },
-    { label: "कुल अनुमुक्त", value: totals.released },
+    { label: "कुल अवमुक्त", value: totals.released },
     { label: "कुल खर्च", value: totals.expenditure },
-    { label: "अनुमुक्त में खर्च शेष", value: totals.balReleased },
+    { label: "अवमुक्त में खर्च शेष", value: totals.balReleased },
     { label: "बजट में खर्च शेष", value: totals.balBudget },
   ];
 
@@ -1242,13 +1240,13 @@ const DashboardTab = ({ report }) => {
                     <th style={{ textAlign: "center" }}>क्रम संख्या</th>
                     <th>योजना</th>
                     <th style={{ textAlign: "right" }}>बजट</th>
-                    <th style={{ textAlign: "right" }}>अनुमुक्त</th>
-                    <th style={{ textAlign: "right" }}>खर्च</th>
-                    <th style={{ textAlign: "right" }}>खर्च शेष (अनुमुक्त)</th>
-                    <th style={{ textAlign: "right" }}>खर्च शेष (बजट)</th>
-                    <th style={{ textAlign: "right" }}>अनुमुक्ति %</th>
-                    <th style={{ textAlign: "right" }}>खर्च % (बजट)</th>
-                    <th style={{ textAlign: "right" }}>खर्च % (अनुमुक्त)</th>
+                    <th style={{ textAlign: "right" }}>अवमुक्त</th>
+                    <th style={{ textAlign: "right" }}>खर्च हुआ</th>
+                    <th style={{ textAlign: "right" }}>खर्च शेष (अवमुक्त में से))</th>
+                    <th style={{ textAlign: "right" }}>खर्च शेष (बजट में से)</th>
+                    <th style={{ textAlign: "right" }}>अवमुक्ति %</th>
+                    <th style={{ textAlign: "right" }}>खर्च % (बजट में से)</th>
+                    <th style={{ textAlign: "right" }}>खर्च % (अवमुक्त में से)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1308,13 +1306,13 @@ const DashboardTab = ({ report }) => {
                       <th style={{ width: "40px" }}>क्रम</th>
                       <th style={{ minWidth: "140px" }}>योजना</th>
                       <th style={{ width: "110px" }}>बजट</th>
-                      <th style={{ width: "110px" }}>अनुमुक्त</th>
-                      <th style={{ width: "110px" }}>खर्च</th>
-                      <th style={{ width: "100px" }}>शेष (अनुमुक्त)</th>
+                      <th style={{ width: "110px" }}>अवमुक्त</th>
+                      <th style={{ width: "110px" }}>खर्च हुआ</th>
+                      <th style={{ width: "100px" }}>शेष (अवमुक्त)</th>
                       <th style={{ width: "100px" }}>शेष (बजट)</th>
-                      <th style={{ width: "80px" }}>अनुमुक्ति %</th>
-                      <th style={{ width: "80px" }}>खर्च % (बजट)</th>
-                      <th style={{ width: "80px" }}>खर्च % (अनुमुक्त)</th>
+                      <th style={{ width: "80px" }}>अवमुक्ति %</th>
+                      <th style={{ width: "80px" }}>खर्च % (बजट में से)</th>
+                      <th style={{ width: "80px" }}>खर्च % (अवमुक्त में से)</th>
                       <th style={{ width: "50px" }}>✕</th>
                     </tr>
                   </thead>
@@ -1384,13 +1382,13 @@ const DashboardTab = ({ report }) => {
                       <th style={{ width: "40px" }}>क्रम</th>
                       <th style={{ minWidth: "140px" }}>योजना</th>
                       <th style={{ width: "110px" }}>बजट</th>
-                      <th style={{ width: "110px" }}>अनुमुक्त</th>
-                      <th style={{ width: "110px" }}>खर्च</th>
-                      <th style={{ width: "100px" }}>शेष (अनुमुक्त)</th>
+                      <th style={{ width: "110px" }}>अवमुक्त</th>
+                      <th style={{ width: "110px" }}>खर्च हुआ</th>
+                      <th style={{ width: "100px" }}>शेष (अवमुक्त)</th>
                       <th style={{ width: "100px" }}>शेष (बजट)</th>
-                      <th style={{ width: "80px" }}>अनुमुक्ति %</th>
-                      <th style={{ width: "80px" }}>खर्च % (बजट)</th>
-                      <th style={{ width: "80px" }}>खर्च % (अनुमुक्त)</th>
+                      <th style={{ width: "80px" }}>अवमुक्ति %</th>
+                      <th style={{ width: "80px" }}>खर्च % (बजट में से)</th>
+                      <th style={{ width: "80px" }}>खर्च % (अवमुक्त में से)</th>
                       <th style={{ width: "50px" }}>✕</th>
                     </tr>
                   </thead>

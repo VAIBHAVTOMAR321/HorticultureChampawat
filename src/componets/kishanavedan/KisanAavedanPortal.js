@@ -1,23 +1,3183 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
+import { useAuth } from "../../context/AuthContext";
 import "./kisan-aavedan-portal.css";
 
-const HTML_BODY =
-  '\n<div class="shell">\n<aside class="rail noprint">\n<h1>अनुदान देयक प्रपत्र</h1>\n<p class="sub">कार्यालय — उद्यान विशेषज्ञ, कोटद्वार (गढ़वाल)<br/>वित्तीय वर्ष 2026-27</p>\n<div class="grp">योजना</div>\n<div style="margin:0 16px 4px">\n<select id="scheme">\n<option value="fencing">चेनलिंक फेंसिंग / घेरबाड़</option>\n<option value="vermicompost">वर्मी कम्पोस्ट इकाई</option>\n</select>\n</div>\n<div class="grp">प्रपत्र</div>\n<nav id="nav"></nav>\n<div class="grp">फाइल</div>\n<div class="tools">\n<button id="bSave">सहेजें</button>\n<button id="bOpen">खोलें</button>\n<button id="bPrint">प्रिंट</button>\n<button id="bNew">नया</button>\n</div>\n<input accept=".json" hidden="" id="fileIn" type="file"/>\n</aside>\n<main>\n<section class="view" data-v="application">\n<h2 class="head">आवेदन पत्र</h2>\n<p class="lead" id="appLead"></p>\n<div id="applicationOut"></div>\n</section>\n<section class="view" data-v="affidavit">\n<h2 class="head">शपथ-पत्र</h2>\n<p class="lead" id="affLead"></p>\n<div id="affidavitOut"></div>\n</section>\n<section class="view on" data-v="work">\n<h2 class="head">व्यय विवरण</h2>\n<p class="lead" id="workLead"></p>\n<div class="card" id="standardsCard"><div class="cap"><i></i><span id="standardsTitle">राजसहायता के मानक</span><small>प्रपत्र पर नहीं छपेंगे — यहीं से अपडेट करें</small></div><div class="pad" id="standardsBody"></div></div>\n<div id="workBody"></div>\n</section>\n<section class="view" data-v="bill">\n<h2 class="head">देयक प्रपत्र</h2>\n<p class="lead" id="billLead"></p>\n<div id="billOut"></div>\n</section>\n</main>\n</div>\n<div hidden="" id="datalists"></div>\n<div class="strip noprint" id="bottomStrip">\n<div class="cell"><div class="k">बिल का कुल योग</div><div class="v num" id="sBill">₹ 0</div></div>\n<div class="cell"><div class="k">एम०बी० मूल्यांकन</div><div class="v num" id="sMb">—</div></div>\n<div class="cell pay"><div class="k">देय राजसहायता <span id="sRate"></span></div><div class="v num" id="sSub">₹ 0</div></div>\n<div class="cell"><div class="k">कृषक द्वारा वहन</div><div class="v num" id="sOwn">₹ 0</div></div>\n<div class="msg" id="sMsg"></div>\n<button class="go" id="bGo">देयक देखें</button>\n</div>\n';
+const getCenterNameFromUser = (authUser) => {
+  if (!authUser) return "";
+  const candidates = [
+    authUser.center_name,
+    authUser.centerName,
+    authUser.username,
+    authUser.name,
+    authUser.center?.center_name,
+    authUser.center?.name,
+    authUser.profile?.center_name,
+  ];
+  const direct = candidates.find(
+    (v) => v !== null && v !== undefined && String(v).trim() !== "",
+  );
+  return direct ? String(direct).trim() : "";
+};
 
-const HTML_LOGIC =
-  '\n"use strict";\n\nconst num  = v => { const n = parseFloat(String(v==null?"":v).replace(/[^0-9.\\-]/g,"")); return isNaN(n)?0:n; };\nconst fmt0 = n => "₹ " + Math.round(Number(n)||0).toLocaleString("en-IN");\nconst fmtN = n => (Number(n)||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});\nconst esc  = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\'":"&quot;"}[c]));\n\nconst ONE=["","एक","दो","तीन","चार","पाँच","छह","सात","आठ","नौ","दस","ग्यारह","बारह","तेरह","चौदह","पन्द्रह","सोलह","सत्रह","अठारह","उन्नीस","बीस","इक्कीस","बाईस","तेईस","चौबीस","पच्चीस","छब्बीस","सत्ताईस","अट्ठाईस","उनतीस","तीस","इकतीस","बत्तीस","तैंतीस","चौंतीस","पैंतीस","छत्तीस","सैंतीस","अड़तीस","उनतालीस","चालीस","इकतालीस","बयालीस","तैंतालीस","चवालीस","पैंतालीस","छियालीस","सैंतालीस","अड़तालीस","उनचास","पचास","इक्यावन","बावन","तिरेपन","चौवन","पचपन","छप्पन","सत्तावन","अट्ठावन","उनसठ","साठ","इकसठ","बासठ","तिरेसठ","चौंसठ","पैंसठ","छियासठ","सड़सठ","अड़सठ","उनहत्तर","सत्तर","इकहत्तर","बहत्तर","तिहत्तर","चौहत्तर","पचहत्तर","छिहत्तर","सतहत्तर","अठहत्तर","उन्यासी","अस्सी","इक्यासी","बयासी","तिरासी","चौरासी","पचासी","छियासी","सत्तासी","अट्ठासी","नवासी","नब्बे","इक्यानवे","बानवे","तिरानवे","चौरानवे","पंचानवे","छियानवे","सत्तानवे","अट्ठानवे","निन्यानवे"];\nconst three = n => { const s=Math.floor(n/100), r=n%100; let o = s?ONE[s]+" सौ":""; if(r) o+=(o?" ":"")+ONE[r]; return o; };\nfunction words(v){\n  const n = Math.round(Math.abs(num(v))); if(!n) return "शून्य";\n  const cr=Math.floor(n/10000000), lk=Math.floor(n%10000000/100000), th=Math.floor(n%100000/1000), hn=n%1000;\n  const o=[]; if(cr)o.push(three(cr)+" करोड़"); if(lk)o.push(three(lk)+" लाख");\n  if(th)o.push(three(th)+" हजार"); if(hn)o.push(three(hn));\n  return o.join(" ");\n}\n\nconst LISTS = {\n  material:["चेनलिंक जाली (10 गेज)","चेनलिंक जाली (12 गेज)","कंटीले तार (बार्बड वायर)","एंगल आयरन 35×35×5 मि०मी०","एंगल आयरन 40×40×5 मि०मी०","एंगल आयरन 50×50×5 मि०मी०","लोहे के खम्बे","नटबोल्ट","बाइंडिंग वायर","लोहे का गेट","पेंट / प्राइमर"],\n  footing:["सीमेंट","रेत","बजरी","रेत बजरी","ईंट","पत्थर","सरिया"],\n  unit:["मीटर","नग","किग्रा","बोरी","घन मीटर","ट्रॉली","फीट","क्विंटल"],\n  work:["गड्ढा खुदान","खम्बों की स्थापना","चेनलिंक जाली लगाना","कंटीले तार लगाना","गेट लगाना","फेंसिंग कार्य","अन्य श्रमिक कार्य"],\n  other:["फोटोग्राफी / जियो टैग फोटोग्राफ","ढुलाई","लोडिंग / अनलोडिंग","मजदूरी","अन्य व्यय"],\n  vermiMaterial:["ईंट","सीमेंट","रेत","बजरी","चिनाई मजदूरी","प्लास्टर कार्य","केंचुए (वर्म कल्चर)","गोबर / जैविक अपशिष्ट","छाया हेतु शेड / तिरपाल","अन्य"]\n};\nconst DL = {dlMaterial:"material", dlFooting:"footing", dlUnit:"unit", dlWork:"work", dlOther:"other", dlVermi:"vermiMaterial"};\n\nconst COLS = {\n  material:{amt:r=>num(r.amt),c:[["item","किस कार्य / सामग्री का बिल है",0,0,"dlMaterial"],["sup","आपूर्तिकर्ता / फर्म"],["bill","बिल सं०"],["amt","बिल राशि (₹)",0,"n"]]},\n  footing:{amt:r=>num(r.amt),c:[["item","किस कार्य / सामग्री का बिल है",0,0,"dlFooting"],["sup","आपूर्तिकर्ता / फर्म"],["amt","बिल राशि (₹)",0,"n"]]},\n  labour:{amt:r=>num(r.amt),c:[["work","कार्य का विवरण",0,0,"dlWork"],["amt","भुगतान राशि (₹)",0,"n"]]},\n  other:{amt:r=>num(r.amt),c:[["item","विवरण",0,0,"dlOther"],["name","प्राप्तकर्ता का नाम"],["vil","ग्राम"],["aad","आधार सं०"],["amt","राशि (₹)",0,"n"]]},\n  vermi:{amt:r=>num(r.amt),c:[["item","कार्य / सामग्री का विवरण",0,0,"dlVermi"],["amt","बिल राशि (₹)",0,"n"]]}\n};\nconst sum = k => (S[k]||[]).reduce((a,r)=>a+COLS[k].amt(r),0);\n\nconst SECTIONS = {\n  fencing:[["material","अ · सामग्री","चेनलिंग / कंटीले वायर, एंगल आयरन, नटबोल्ट आदि → देयक पंक्ति 1"],["footing","ब · फुटिंग सामग्री","सीमेंट, रेत, बजरी → देयक पंक्ति 2"],["labour","स · श्रमिक कार्य","→ देयक पंक्ति 3"],["other","अन्य","→ देयक पंक्ति 4"]],\n  vermicompost:[["vermi","वर्मी कम्पोस्ट इकाई — सामग्री एवं व्यय","ईंट, सीमेंट, रेत, बजरी, चिनाई, केंचुए, गोबर आदि"]]\n};\n\nconst blank = () => ({\n  scheme:"fencing",\n  lists: JSON.parse(JSON.stringify(LISTS)),\n  norm:{fRate:80, vRate:75, fCap:"", vCap:24998, fCostHa:200000, vStdCost:33333},\n  f:{name:"",father:"",village:"",post:"",block:"",dist:"",mob:"",aadhar:"",khasra:"",bank:"",branch:"",acct:"",ifsc:"",cat:"सामान्य",farmerCat:"सीमांत",gardenCard:"",hortiCard:"",tehsil:"",proposedArea:"",plants:"",irrigation:"उपलब्ध",fenceStandardCost:"",planType:"जिला योजना", fenceMaterial:"चेनलिंक जाली", gender:"पुरुष",nali:"",area:"",fenceLen:"",poles:"",mbNo:"", verifiedLen:"260",mbLen:"",mbRate:"",mbAmt:"", date:new Date().toISOString().slice(0,10), place:"", officer:"", desig:""},\n  landRows:[{relation:"स्वयं",name:"",father:"",khasra:"",aadhaar:"",hec:"0.40"},{relation:"भाई",name:"",father:"",khasra:"",aadhaar:"",hec:""},{relation:"पुत्र",name:"",father:"",khasra:"",aadhaar:"",hec:""},{relation:"पिता",name:"",father:"",khasra:"",aadhaar:"",hec:""},{relation:"अन्य",name:"",father:"",khasra:"",aadhaar:"",hec:""}],\n  material:[{}], footing:[{}], labour:[{}], other:[{}], vermi:[{}], vcrops:[{name:"",area:""}]\n});\nlet S = blank();\nconst KEY = "anudan_form_v3";\nconst save = () => { try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} };\n\nfunction mbValue(){\n  const direct = num(S.f.mbAmt);\n  if(direct>0) return direct;\n  const l=num(S.f.mbLen), r=num(S.f.mbRate);\n  return (l>0 && r>0) ? l*r : 0;\n}\nfunction calc(){\n  const isF = S.scheme==="fencing";\n  const parts = isF ? [\n      ["सामग्री — चेनलिंग / कंटीले वायर, एंगल आयरन, नटबोल्ट आदि", sum("material")],\n      ["फुटिंग सामग्री — सीमेंट, रेत, बजरी", sum("footing")],\n      ["श्रमिक कार्य — गड्ढा खुदान, खम्बों की स्थापना, चेनलिंक / कंटीले वायर लगाना, गेट लगाना आदि", sum("labour")],\n      ["अन्य", sum("other")]\n    ] : [\n      ["वर्मी कम्पोस्ट इकाई निर्माण कार्य", sum("vermi")]\n    ];\n  const bill = parts.reduce((a,p)=>a+p[1],0);\n  const rate = (isF ? num(S.norm.fRate) : num(S.norm.vRate))/100;\n  const cap  = num(isF ? S.norm.fCap : S.norm.vCap);\n  let mb=0, base=0, bases=[], hec=0, allowedLen=0, verifiedLen=0, ratio=1, actualArea=0, standardCost=0, shortfall=0;\n  if(isF){\n    mb = mbValue();\n    const app = applicationData();\n    hec = app.allowedArea ? app.totalHec : 0;\n    const std = app.allowedArea ? fenceStandard(hec) : null;\n    allowedLen = std ? std.len : 0;\n    verifiedLen = num(S.f.verifiedLen);\n    ratio = (allowedLen>0 && verifiedLen>0) ? (verifiedLen/allowedLen) : 1;\n    actualArea = hec * ratio;\n    const costHa = num(S.norm.fCostHa)||200000;\n    standardCost = actualArea>0 ? Math.round(actualArea*costHa) : 0;\n    shortfall = Math.max(0, allowedLen - verifiedLen);\n    if(bill>0) bases.push({key:"bill",label:"बिल / वाउचर के अनुसार कुल व्यय",val:bill});\n    if(mb>0) bases.push({key:"mb",label:"एम०बी० मूल्यांकन धनराशि",val:mb});\n    if(standardCost>0) bases.push({key:"standard",label:"मानक लागत (क्षेत्रफल × ₹2,00,000)",val:standardCost});\n    base = bases.length ? Math.min(...bases.map(b=>b.val)) : 0;\n  }else{\n    mb = mbValue();\n    standardCost = num(S.norm.vStdCost)||33333;\n    if(bill>0) bases.push({key:"bill",label:"बिल / वाउचर के अनुसार कुल व्यय",val:bill});\n    if(mb>0) bases.push({key:"mb",label:"एम०बी० मूल्यांकन धनराशि",val:mb});\n    if(standardCost>0) bases.push({key:"standard",label:"मानक लागत (10 फीट × 8 फीट × 2.5 फीट)",val:standardCost});\n    base = bases.length ? Math.min(...bases.map(b=>b.val)) : 0;\n    shortfall = Math.max(0, standardCost - base);\n  }\n  let sub = Math.round(base*rate);\n  const capped = cap>0 && sub>cap;\n  if(capped) sub = cap;\n  const eff = bill ? sub/bill : 0;\n  const rows=[]; let run=0;\n  parts.forEach((p,i)=>{\n    const s = (i<parts.length-1) ? Math.round(p[1]*eff) : Math.max(0, sub-run);\n    run += s;\n    rows.push({name:p[0], amt:p[1], sub:s, own:p[1]-s});\n  });\n  return {isF, bill, mb, base, bases, rate, sub, own:bill-sub, cap, capped, over: mb>0 && bill>0 && bill>mb,hec, allowedLen, verifiedLen, mbLen:num(S.f.mbLen), ratio, actualArea, standardCost, shortfall, rows};\n}\n\nfunction tableHTML(k){\n  const cfg=COLS[k];\n  let h=\'<table class="expense-table"><thead><tr><th style="width:38px">क्र०</th>\';\n  cfg.c.forEach(c=>h+=`<th>${c[1]}</th>`);\n  h+=\'<th style="width:38px"></th></tr></thead><tbody>\';\n  S[k].forEach((r,i)=>{\n    h+=`<tr><td class="n">${i+1}</td>`;\n    cfg.c.forEach(c=>{\n      if(c[0]==="_amt"){ h+=`<td class="calc num">${fmtN(cfg.amt(r))}</td>`; return; }\n      h+=`<td><input data-row="${k}" data-i="${i}" data-k="${c[0]}" value="${esc(r[c[0]]||"")}"`+ (c[4]?` list="${c[4]}"`:"") + (c[3]==="n"?\' inputmode="decimal" style="text-align:right"\':"") + `></td>`;\n    });\n    h+=`<td><button class="rm" data-del="${k}" data-i="${i}" title="पंक्ति हटाएँ">×</button></td></tr>`;\n  });\n  const ai = cfg.c.findIndex(c=>c[0]==="_amt"||c[0]==="amt");\n  h+=`<tr class="tot"><td colspan="${ai+1}" style="text-align:right">योग</td><td class="calc num" data-tot="${k}">${fmtN(sum(k))}</td>`;\n  for(let j=ai+1;j<cfg.c.length;j++) h+="<td></td>";\n  h+=\'</tr></tbody></table>\';\n  h+=`<button class="addrow" data-add="${k}">+ पंक्ति जोड़ें</button>`;\n  return h;\n}\nfunction buildLists(){\n  document.getElementById("datalists").innerHTML =\n    Object.keys(DL).map(i=>`<datalist id="${i}">`+(S.lists[DL[i]]||[]).map(v=>`<option value="${esc(v)}">`).join("")+"</datalist>").join("");\n}\n\nfunction buildNav(){\n  const nav=document.getElementById("nav"); if(!nav) return;\n  if(S.scheme==="fencing"){\n    nav.innerHTML=\'<a data-go="application">आवेदन पत्र</a><a class="on" data-go="work">व्यय विवरण</a><a data-go="bill">देयक प्रपत्र</a>\';\n  }else{\n    nav.innerHTML=\'<a data-go="application">आवेदन पत्र</a><a data-go="affidavit">शपथ-पत्र</a><a class="on" data-go="work">व्यय विवरण</a><a data-go="bill">देयक प्रपत्र</a>\';\n  }\n}\n\nfunction toggleStrip(){\n  const strip=document.getElementById("bottomStrip");\n  if(!strip) return;\n  strip.style.display = S.scheme==="fencing" ? "" : "none";\n}\n\nfunction buildStandards(){\n  const body=document.getElementById("standardsBody");\n  const title=document.getElementById("standardsTitle");\n  if(!body) return;\n  if(S.scheme==="fencing"){\n    title.textContent="फेंसिंग राजसहायता के मानक";\n    body.innerHTML=`<div class="grid"><div><label class="f">फेंसिंग राजसहायता दर (%)</label><select data-norm="fRate"><option value="50">50%</option><option value="80">80%</option></select></div><div><label class="f">इकाई लागत ₹ प्रति हेक्टेयर</label><input data-norm="fCostHa" inputmode="decimal" placeholder="2,00,000"></div><div><label class="f">अतिरिक्त अधिकतम सीमा ₹ (वैकल्पिक)</label><input data-norm="fCap" inputmode="decimal" placeholder="खाली = कोई अलग सीमा नहीं"></div></div><p class="lead" style="margin:12px 0 0">विभागीय मानक: इकाई लागत ₹2,00,000 प्रति हेक्टेयर। राजसहायता तीन आधारों — बिल / वाउचर का योग, एम०बी० मूल्यांकन, तथा मानक लागत — इनमें से जो न्यूनतम हो, उस पर देय होगी।</p>`;\n  }else{\n    title.textContent="वर्मी कम्पोस्ट राजसहायता के मानक";\n    body.innerHTML=`<div class="grid"><div><label class="f">वर्मी कम्पोस्ट राजसहायता दर (%)</label><select data-norm="vRate"><option value="75">75%</option></select></div><div><label class="f">मानक लागत ₹ (10 फीट × 8 फीट × 2.5 फीट)</label><input data-norm="vStdCost" inputmode="decimal" placeholder="33,333"></div><div><label class="f">अधिकतम अनुदान सीमा ₹</label><input data-norm="vCap" inputmode="decimal" placeholder="24,998"></div></div><p class="lead" style="margin:12px 0 0">विभागीय मानक: एक इकाई (10 फीट × 8 फीट × 2.5 फीट) हेतु निर्धारित ₹33,333। राजसहायता तीन आधारों — बिल / वाउचर का योग, एम०बी० मूल्यांकन, तथा मानक लागत — इनमें से जो न्यूनतम हो, उस पर देय होगी।</p>`;\n  }\n  body.querySelectorAll("[data-norm]").forEach(el=>el.value=S.norm[el.dataset.norm]);\n}\nfunction buildWork(){\n  buildStandards();\n  document.getElementById("workLead").textContent = S.scheme==="fencing"\n    ? "बिल एवं वाउचर के अनुसार पूरा व्यय भरें। हर अनुभाग का योग अपने आप देयक की सम्बन्धित पंक्ति में चला जाएगा।"\n    : "वर्मी कम्पोस्ट इकाई निर्माण पर हुआ पूरा व्यय भरें। हर पंक्ति में पहले कार्य / विवरण चुनें, फिर उसी के सामने बिल राशि डालें।";\n  document.getElementById("workBody").innerHTML = SECTIONS[S.scheme].map(([k,t,n])=>\n    `<div class="card"><div class="cap"><i></i>${t}<small>${n}</small></div><div class="pad">${tableHTML(k)}</div></div>`).join("")\n    + (S.scheme!=="fencing" ? `<div class="note">कार्य / सामग्री: ईंट, सीमेंट, रेत, बजरी, चिनाई मजदूरी, प्लास्टर कार्य, केंचुए (वर्म कल्चर), गोबर / जैविक अपशिष्ट, छाया हेतु शेड / तिरपाल एवं अन्य।</div>` : "");\n  buildLists();\n  document.querySelectorAll("[data-norm]").forEach(el=>el.value = S.norm[el.dataset.norm]);\n}\n\nconst FENCE_AREA_MAP = [\n  {nali:10,hec:0.20,len:240,poles:81},{nali:15,hec:0.30,len:260,poles:87},{nali:20,hec:0.40,len:280,poles:94},{nali:25,hec:0.50,len:300,poles:101},{nali:30,hec:0.60,len:320,poles:107},{nali:35,hec:0.70,len:340,poles:114},{nali:40,hec:0.80,len:360,poles:121},{nali:45,hec:0.90,len:380,poles:127},{nali:50,hec:1.00,len:400,poles:134},{nali:60,hec:1.20,len:440,poles:147},{nali:70,hec:1.40,len:480,poles:161},{nali:80,hec:1.60,len:520,poles:174},{nali:90,hec:1.80,len:560,poles:187},{nali:100,hec:2.00,len:600,poles:201}\n];\nconst ALLOWED_FENCE_HEC = FENCE_AREA_MAP.map(x=>x.hec);\nfunction fenceStandard(hec){ const h = Math.round(num(hec)*100)/100; if(h<=0) return null; return FENCE_AREA_MAP.find(x=>Math.abs(x.hec-h)<0.0001) || null; }\nfunction isAllowedFenceHec(hec){ const h = Math.round(num(hec)*100)/100; return ALLOWED_FENCE_HEC.some(x=>Math.abs(x-h)<0.0001); }\nfunction fenceMaterialName(){ return S.f.fenceMaterial==="कंटीले तार" ? "कंटीले तार (बार्बड वायर)" : "चेनलिंक जाली"; }\nconst LANG_FIELDS=["planType","gender","fenceMaterial"];\nfunction rebuildDocs(){ if(cur==="application" && document.getElementById("applicationOut")) buildApplication(); if(cur==="bill" && document.getElementById("billOut")) buildBill(); if(cur==="affidavit" && document.getElementById("affidavitOut")) buildAffidavit(); save(); }\nfunction isFemale(){ return (S.f.gender||"पुरुष")==="महिला"; }\nfunction G(m,f){ return isFemale()?f:m; }\nfunction applicantWord(){ return G("आवेदक","आवेदिका"); }\nfunction beneficiaryWord(){ return G("लाभार्थी","लाभार्थिनी"); }\nfunction fenceHeading(){ return S.f.fenceMaterial==="कंटीले तार" ? "कंटीले तार" : "चेनलिंक फेंसिंग"; }\nfunction fenceKaamPhrase(){ return S.f.fenceMaterial==="कंटीले तार" ? "कंटीले तार की घेरबाड़" : "चेनलिंक फेंसिंग की घेरबाड़"; }\nfunction applicationData(){\n  const totalHec = Math.round((S.landRows||[]).reduce((a,r)=>a+num(r.hec),0)*100)/100;\n  const exact = fenceStandard(totalHec);\n  const totalNali = exact ? exact.nali : 0;\n  const plants = num(S.f.plants);\n  const area = totalHec;\n  const allowedArea = isAllowedFenceHec(totalHec);\n  const eligible = !!S.f.gardenCard && plants>0 && allowedArea && (plants/area)>=100;\n  return {totalHec, totalNali, exact, plants, area, allowedArea, eligible, minPlants:area*100};\n}\nfunction affidavitHasCoSharers(d){ const rows=S.landRows||[]; const ownHec=num(rows[0]?.hec); const totalHec=num(d?.totalHec); return totalHec > ownHec + 0.000001; }\nfunction affHec(v){ const n=num(v); return n>0 ? n.toFixed(2) : "…………"; }\nfunction affNali(v){ const n=num(v); return n>0 ? n.toFixed(2).replace(/\\.00$/,"") : "…………"; }\n\nfunction buildFencingApplication(){\n  const d=applicationData();\n  const rate=num(S.norm.fRate);\n  const standard = (d.allowedArea && d.totalHec>0) ? Math.round(d.totalHec*(num(S.norm.fCostHa)||200000)) : 0;\n  const subsidy=standard>0 ? Math.round(standard*rate/100) : 0;\n  const status = !S.f.gardenCard ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — उद्यान कार्ड संख्या अनिवार्य है।</div>` : d.plants<=0 ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — पौधों की संख्या भरना अनिवार्य है।</div>` : d.area<=0 ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> पहले भूमि का क्षेत्रफल चुनें।</div>` : !d.allowedArea ? `<div class="appbad"><b>आवेदन स्थिति:</b> कुल क्षेत्रफल निर्धारित मैपिंग की स्वीकृत श्रेणी से मेल नहीं खाता।</div>` : d.plants/d.area<100 ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — न्यूनतम 100 पौधे प्रति हे० आवश्यक हैं।</div>` : `<div class="appok"><b>फेंसिंग पात्रता:</b> पात्र — न्यूनतम 100 पौधे प्रति हे० की शर्त पूरी है।</div>`;\n  document.getElementById("applicationOut").innerHTML=`<div class="appdoc"><div style="text-align:center;font-size:11.5px;color:#65746B;margin:2px 0 4px">उद्यान विभाग · वित्तीय वर्ष 2026-27</div><h3 style="text-decoration:underline">${esc(S.f.planType||"जिला योजना")} अन्तर्गत ${fenceHeading()} हेतु</h3><h4 style="color:var(--ink);font-size:16px;font-weight:600">कृषक आवेदन पत्र</h4><div class="appnote"><b>योजना:</b><select data-f="planType" style="margin-left:8px;padding:3px"><option>जिला योजना</option><option>राज्य सेक्टर योजना</option></select><span style="margin-left:18px"><b>लिंग:</b></span><select data-f="gender" style="margin-left:8px;padding:3px"><option value="पुरुष">पुरुष</option><option value="महिला">महिला</option></select><span style="margin-left:18px"><b>फेंसिंग सामग्री:</b></span><select data-f="fenceMaterial" style="margin-left:8px;padding:3px"><option value="चेनलिंक जाली">चेनलिंक जाली</option><option value="कंटीले तार">कंटीले तार</option></select><span style="margin-left:18px"><b>फेंसिंग राजसहायता दर:</b></span><select data-f="fRate" id="appRate" style="margin-left:8px;padding:3px"><option value="50">50%</option><option value="80">80%</option></select></div><h5>उद्यान कार्ड विवरण</h5><table class="landtable infoTable"><tbody><tr><td class="flabel">उद्यान कार्ड संख्या</td><td><input data-f="gardenCard" value="${esc(S.f.gardenCard||"")}"></td></tr><tr><td class="flabel">फल पौधों की संख्या</td><td><input data-f="plants" inputmode="numeric" value="${esc(S.f.plants||"")}"></td></tr></tbody></table><div id="fenceEligibility">${status}</div><h5>1. ${applicantWord()} का विवरण</h5><table class="landtable infoTable"><tbody><tr><td class="flabel">${beneficiaryWord()} / ${applicantWord()} का नाम</td><td><input data-f="name" value="${esc(S.f.name||"")}"></td></tr><tr><td class="flabel">पिता / पति का नाम</td><td><input data-f="father" value="${esc(S.f.father||"")}"></td></tr><tr><td class="flabel">ग्राम</td><td><input data-f="village" value="${esc(S.f.village||"")}"></td></tr><tr><td class="flabel">पोस्ट ऑफिस</td><td><input data-f="post" value="${esc(S.f.post||"")}"></td></tr><tr><td class="flabel">विकास खण्ड</td><td><input data-f="block" value="${esc(S.f.block||"")}"></td></tr><tr><td class="flabel">जनपद</td><td><input data-f="dist" value="${esc(S.f.dist||"")}"></td></tr><tr><td class="flabel">मोबाइल</td><td><input data-f="mob" value="${esc(S.f.mob||"")}"></td></tr><tr><td class="flabel">आधार संख्या</td><td><input data-f="aadhar" value="${esc(S.f.aadhar||"")}"></td></tr><tr><td class="flabel">वर्ग</td><td><select data-f="cat"><option>सामान्य</option><option>OBC</option><option>SC</option><option>ST</option><option>महिला</option></select></td></tr><tr><td class="flabel">कृषक श्रेणी</td><td><select data-f="farmerCat"><option>सीमांत</option><option>लघु</option><option>अन्य</option></select></td></tr></tbody></table><h5>2. बैंक विवरण (DBT हेतु)</h5><table class="landtable infoTable"><tbody><tr><td class="flabel">बैंक</td><td><input data-f="bank" value="${esc(S.f.bank||"")}"></td></tr><tr><td class="flabel">शाखा</td><td><input data-f="branch" value="${esc(S.f.branch||"")}"></td></tr><tr><td class="flabel">खाता संख्या</td><td><input data-f="acct" value="${esc(S.f.acct||"")}"></td></tr><tr><td class="flabel">IFSC</td><td><input data-f="ifsc" value="${esc(S.f.ifsc||"")}"></td></tr></tbody></table><h5>3. भूमि एवं कार्य का विवरण</h5><table class="landtable"><thead><tr><th style="width:42px">क्र.</th><th style="width:110px">भूमि किसकी</th><th>नाम (खतौनी अनुसार)</th><th>पिता का नाम</th><th style="width:120px">ग्राम</th><th style="width:120px">खसरा</th><th style="width:125px">आधार संख्या</th><th style="width:110px">क्षेत्रफल (हे०)</th><th class="noprint" style="width:46px">क्रिया</th></tr></thead><tbody>${(S.landRows||[]).map((r,i)=>`<tr><td style="text-align:center">${i+1}</td><td><input data-land="${i}" data-k="relation" value="${esc(r.relation||"")}" placeholder="भूमि किसकी"></td><td>${i===0?`<input class="landSelfName" value="${esc(S.f.name||"")}" placeholder="नाम" readonly tabindex="-1">`:`<input data-land="${i}" data-k="name" value="${esc(r.name||"")}" placeholder="नाम">`}</td><td>${i===0?`<input class="landSelfFather" value="${esc(S.f.father||"")}" placeholder="पिता" readonly tabindex="-1">`:`<input data-land="${i}" data-k="father" value="${esc(r.father||"")}" placeholder="पिता">`}</td><td><input class="landVil" value="${esc(S.f.village||"")}" placeholder="ग्राम" readonly tabindex="-1"></td><td><input data-land="${i}" data-k="khasra" value="${esc(r.khasra||"")}" placeholder="खसरा"></td><td>${i===0?`<input class="landSelfAadhaar" value="${esc(S.f.aadhar||"")}" placeholder="आधार" readonly tabindex="-1">`:`<input data-land="${i}" data-k="aadhaar" value="${esc(r.aadhaar||"")}" inputmode="numeric" maxlength="12" placeholder="आधार">`}</td><td><input data-land="${i}" data-k="hec" inputmode="decimal" value="${esc(r.hec||"")}" placeholder="हे०"></td><td class="noprint" style="text-align:center">${i===0?"":`<button type="button" class="land-remove" data-land-del="${i}" title="हटाएँ">×</button>`}</td></tr>`).join("")}<tr class="tot"><td colspan="7" style="text-align:right">प्रस्तावित भूमि का कुल क्षेत्रफल (हे०)</td><td class="calc">${fmtN(d.totalHec)}</td><td class="noprint"></td></tr></tbody></table><div class="noprint land-row-actions"><button type="button" class="addrow" id="addLandRow">+ पंक्ति जोड़ें</button></div><h5>4. सारांश — क्षेत्रफल, फेंसिंग एवं राजसहायता</h5><table><thead><tr><th>क्षेत्रफल (हे०)</th><th>अनुमन्य लम्बाई (मी०)</th><th>खम्बे</th><th>लागत (₹)</th><th>राजसहायता</th></tr></thead><tbody><tr><td style="text-align:center" id="sumHec">${d.allowedArea?d.totalHec.toFixed(2):"—"}</td><td style="text-align:center" id="sumLen">${d.exact?d.exact.len:"—"}</td><td style="text-align:center" id="sumPoles">${d.exact?d.exact.poles:"—"}</td><td style="text-align:right" id="sumCost">${fmt0(standard)}</td><td style="text-align:right" id="sumSubsidy">${fmt0(subsidy)}</td></tr></tbody></table><h5>5. घोषणा</h5><div class="appnote">उपर्युक्त सभी विवरण सत्य हैं। मुझे पूर्व में अन्य योजना से अनुदान नहीं मिला।</div><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:20px"><div style="flex:0 0 auto"><div style="display:flex;gap:6px;align-items:baseline"><b>दिनांक :</b><input class="ln sm" type="date" data-f="date"></div><div style="display:flex;gap:6px;align-items:baseline;margin-top:8px"><b>स्थान :</b><input class="ln sm" data-f="place"></div></div><div style="text-align:center;min-width:240px;border-top:1px solid #16281E;padding-top:5px">हस्ताक्षर ${G("कृषक","कृषिका")}<br><span class="auto" id="appCertName">${esc(S.f.name||"")}</span></div></div></div>${buildFencingAffidavitInfoPreview(d)}${buildFencingAffidavit(d)}`;\n  document.querySelectorAll("#applicationOut [data-f]").forEach(el=>{ if(el.dataset.f==="fRate") el.value=S.norm.fRate; else if(S.f[el.dataset.f]!==undefined) el.value=S.f[el.dataset.f]; });\n  const rr=document.getElementById("appRate"); if(rr) rr.value=S.norm.fRate;\n  updateApplicationDerived();\n}\n\nfunction buildFencingAffidavitInfoPreview(d){\n  if(S.scheme!=="fencing") return "";\n  const f=S.f||{};\n  const value=(v)=>esc(String(v||"").trim()||"…………");\n  const total=d.allowedArea ? Number(d.totalHec).toFixed(2) : "…………";\n  const type=affidavitHasCoSharers(d) ? "संयुक्त भूमि / सह-खातेदार वाला शपथ-पत्र" : "सामान्य शपथ-पत्र";\n  return `<div class="aff-preview noprint"><div class="aff-preview-title">शपथ-पत्र हेतु स्वतः भरने वाली जानकारी — ${type}</div><div class="aff-preview-grid"><div class="aff-preview-item"><span class="aff-preview-label">नाम</span><span class="aff-preview-value">${value(f.name)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">पिता / पति का नाम</span><span class="aff-preview-value">${value(f.father)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">ग्राम</span><span class="aff-preview-value">${value(f.village)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">डाकघर</span><span class="aff-preview-value">${value(f.post)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">विकास खण्ड</span><span class="aff-preview-value">${value(f.block)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">जनपद</span><span class="aff-preview-value">${value(f.dist)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">उद्यान कार्ड संख्या</span><span class="aff-preview-value">${value(f.gardenCard)}</span></div><div class="aff-preview-item"><span class="aff-preview-label">कुल प्रस्तावित क्षेत्रफल</span><span class="aff-preview-value">${total} हे०</span></div></div></div>`;\n}\n\nfunction buildFencingAffidavit(d){\n  const f=S.f||{};\n  const joint=affidavitHasCoSharers(d);\n  const total=affHec(d.totalHec);\n  const totalNali=affNali(d.totalNali);\n  const first=(S.landRows&&S.landRows[0])||{};\n  const coRows=(S.landRows||[]).slice(1).filter(r=>num(r.hec)>0||String(r.name||"").trim()||String(r.relation||"").trim());\n  const plan=esc(f.planType||"जिला योजना");\n  const name=esc(f.name||"…………");\n  const father=esc(f.father||"…………");\n  const village=esc(f.village||"…………");\n  const post=esc(f.post||"…………");\n  const dist=esc(f.dist||"…………");\n  const card=esc(f.gardenCard||"…………");\n  const khasra=esc(first.khasra||"…………");\n  const block=esc(f.block||"…………");\n  if(!joint){\n    return `<div class="affidavit-doc aff-page-break"><div class="aff-head"><div class="aff-kicker">उद्यान विभाग · वित्तीय वर्ष 2026-27</div><div class="aff-title">शपथ-पत्र</div><div class="aff-sub">(${plan} अन्तर्गत ${fenceHeading()} घेराबड़ कार्य हेतु)</div><div class="aff-line"></div></div><div class="aff-meta"><div><span>नाम</span><b>${name}</b></div><div><span>पिता / पति का नाम</span><b>${father}</b></div><div><span>ग्राम</span><b>${village}</b></div><div><span>डाकघर</span><b>${post}</b></div><div><span>विकास खण्ड</span><b>${block}</b></div><div><span>जनपद</span><b>${dist}</b></div><div><span>उद्यान कार्ड</span><b>${card}</b></div><div><span>खसरा (स्वयं)</span><b>${khasra}</b></div></div><div class="aff-intro">मैं <b>${name}</b> ${G("पुत्र","पुत्री")} <b>${father}</b>, निवासी ग्राम <b>${village}</b>, जनपद <b>${dist}</b>, शपथपूर्वक कथन ${G("करता","करती")} हूँ कि:</div><div class="aff-item">1. मेरा नाम, पता एवं अन्य व्यक्तिगत विवरण पूर्णतः सत्य हैं।</div><div class="aff-item">2. मैंने उद्यान विभाग, कोटद्वार में विधिवत आवेदन किया है।</div><div class="aff-item">3. इससे पूर्व मैंने इस कार्य हेतु किसी अन्य योजना से अनुदान नहीं प्राप्त किया है।</div><div class="aff-item">4. भूमि मेरे वैधानिक स्वामित्व में है।</div><table class="aff-land"><thead><tr><th>ग्राम</th><th>खसरा</th><th>कुल क्षेत्रफल (हे०)</th><th>कुल क्षेत्रफल (नाली)</th></tr></thead><tbody><tr><td>${village}</td><td>${khasra}</td><td class="right">${total}</td><td class="right">${totalNali}</td></tr></tbody></table><div class="aff-item">5. भूमि विवाद रहित है।</div><div class="aff-item">6. कार्य विभागीय मानकों के अनुरूप ही कराया जाएगा।</div><div class="aff-decl">मैं यह शपथ-पत्र स्वेच्छा से सत्यनिष्ठा के साथ दे रहा / रही हूँ।</div><div class="aff-sign"><div class="box">स्थान: ${village}<br>दिनांक: ${esc(f.date||"…………")}</div><div class="box line">${G("शपथकर्ता","शपथकर्त्री")} के हस्ताक्षर<br>${name}</div></div></div>`;\n  }\n  const coTable=coRows.length ? coRows.map((r,i)=>`<tr><td style="text-align:center">${i+1}</td><td>${esc(r.name||"…………")}</td><td>${esc(r.relation||"…………")}</td><td>${esc(r.khasra||"…………")}</td><td>${esc(r.aadhaar||"…………")}</td><td class="right">${affHec(r.hec)}</td></tr>`).join("") : `<tr><td colspan="6" style="text-align:center">कोई सह-खातेदार विवरण उपलब्ध नहीं</td></tr>`;\n  return `<div class="affidavit-doc aff-page-break"><div class="aff-head"><div class="aff-kicker">उद्यान विभाग · वित्तीय वर्ष 2026-27</div><div class="aff-title">शपथ-पत्र</div><div class="aff-sub">(${fenceHeading()} घेराबड़ कार्य हेतु — संयुक्त भूमि / सह-खातेदार)</div><div class="aff-line"></div></div><div class="aff-meta"><div><span>नाम</span><b>${name}</b></div><div><span>पिता / पति का नाम</span><b>${father}</b></div><div><span>ग्राम</span><b>${village}</b></div><div><span>डाकघर</span><b>${post}</b></div><div><span>विकास खण्ड</span><b>${block}</b></div><div><span>जनपद</span><b>${dist}</b></div><div><span>उद्यान कार्ड</span><b>${card}</b></div><div><span>कुल प्रस्तावित क्षेत्रफल</span><b>${total} हे० (${totalNali} नाली)</b></div></div><table class="aff-land"><thead><tr><th>क्र०</th><th>सह-खातेदार</th><th>${applicantWord()} से संबंध</th><th>खसरा</th><th>आधार</th><th>क्षेत्रफल (हे०)</th></tr></thead><tbody><tr><td style="text-align:center">स्वयं</td><td>${name}</td><td>स्वयं</td><td>${khasra}</td><td>${esc(f.aadhar||"…………")}</td><td class="right">${affHec(first.hec)}</td></tr>${coTable}<tr><td colspan="4" style="text-align:right"><b>कुल प्रस्तावित क्षेत्रफल</b></td><td class="right"><b>${total}</b></td></tr></tbody></table><div class="aff-decl">मैं यह शपथ-पत्र स्वेच्छा से सत्यनिष्ठा के साथ दे रहा / रही हूँ।</div><div class="aff-sign"><div class="box">स्थान: ${village}<br>दिनांक: ${esc(f.date||"…………")}</div><div class="box line">${G("शपथकर्ता","शपथकर्त्री")} के हस्ताक्षर<br>${name}</div></div></div>`;\n}\n\nfunction buildVermiApplication(){\n  const f=S.f||{};\n  const rate=num(S.norm.vRate)||75;\n  const stdCost=num(S.norm.vStdCost)||33333;\n  const maxSub=num(S.norm.vCap)||24998;\n  const subsidy=Math.min(Math.round(stdCost*rate/100),maxSub);\n  const farmerShare=stdCost-subsidy;\n  let cropHTML=(S.vcrops||[]).map((r,i)=>\'<tr><td>\'+(i+1)+\'</td><td><input list="cropOptions" data-vc="\'+i+\'" data-k="name" value="\'+esc(r.name||"")+\'" placeholder="फसल का नाम"></td><td><input data-vc="\'+i+\'" data-k="area" value="\'+esc(r.area||"")+\'" inputmode="decimal"></td><td class="noprint"><button class="btn" data-vcdel="\'+i+\'">×</button></td></tr>\').join("");\n  document.getElementById("applicationOut").innerHTML=`<div class="appdoc"><div style="text-align:center;font-size:11.5px;color:#65746B;margin:2px 0 4px">उद्यान विभाग · वित्तीय वर्ष 2026-27</div><h3 style="text-decoration:underline">राज्य सेक्टर योजना अन्तर्गत वर्मी कम्पोस्ट इकाई हेतु</h3><h4 style="color:var(--ink);font-size:16px;font-weight:600">कृषक आवेदन पत्र</h4><div class="st">आवेदक का विवरण</div><div class="grid2"><div class="field"><label>कृषक का नाम</label><input data-f="name" value="${esc(f.name||"")}"></div><div class="field"><label>पिता / पति का नाम</label><input data-f="father" value="${esc(f.father||"")}"></div><div class="field"><label>ग्राम</label><input data-f="village" value="${esc(f.village||"")}"></div><div class="field"><label>डाकघर</label><input data-f="post" value="${esc(f.post||"")}"></div><div class="field"><label>तहसील</label><input data-f="tehsil" value="${esc(f.tehsil||"")}" placeholder="तहसील का नाम"></div><div class="field"><label>जनपद</label><input data-f="dist" value="${esc(f.dist||"")}"></div><div class="field"><label>उद्यान कार्ड संख्या</label><input data-f="hortiCard" value="${esc(f.hortiCard||"")}"></div><div class="field"><label>मोबाइल नं.</label><input data-f="mob" inputmode="numeric" value="${esc(f.mob||"")}"></div><div class="field"><label>आधार संख्या</label><input data-f="aadhar" inputmode="numeric" maxlength="12" value="${esc(f.aadhar||"")}"></div><div class="field"><label>खाता / खतौनी संख्या</label><input data-f="khasra" value="${esc(f.khasra||"")}"></div><div class="field"><label>लिंग</label><select data-f="gender"><option value="पुरुष">पुरुष</option><option value="महिला">महिला</option></select></div></div><div class="st">भूमि का विवरण</div><div class="grid2"><div class="field"><label>भूमि का क्षेत्रफल (हे०)</label><input data-f="proposedArea" inputmode="decimal" value="${esc(f.proposedArea||"")}" placeholder="हे० में क्षेत्रफल"></div></div><div class="st">कृषक की खेती का विवरण</div><table><thead><tr><th style="width:55px">क्र०</th><th>फसल / बागवानी फसल का नाम</th><th>क्षेत्रफल (हे०)</th><th class="noprint" style="width:70px">क्रिया</th></tr></thead><tbody>${cropHTML}</tbody></table><div class="noprint" style="margin-top:8px"><button class="btn" id="addCropBtn">+ फसल जोड़ें</button></div><div class="st">बैंक विवरण</div><div class="grid2"><div class="field"><label>विकासखण्ड</label><input data-f="block" value="${esc(f.block||"")}"></div><div class="field"><label>बैंक का नाम</label><input data-f="bank" value="${esc(f.bank||"")}"></div><div class="field"><label>शाखा</label><input data-f="branch" value="${esc(f.branch||"")}"></div><div class="field"><label>बैंक खाता संख्या</label><input data-f="acct" inputmode="numeric" value="${esc(f.acct||"")}"></div><div class="field"><label>IFSC कोड</label><input data-f="ifsc" value="${esc(f.ifsc||"")}"></div></div><div class="st">स्थान एवं दिनांक</div><div class="grid2"><div class="field"><label>स्थान</label><input data-f="place" value="${esc(f.place||"")}" placeholder="स्थान का नाम"></div><div class="field"><label>दिनांक</label><input data-f="date" value="${esc(f.date||"")}" placeholder="दिन/माह/वर्ष"></div></div><div class="st">7. घोषणा</div><div class="declaration-box"><p>उपर्युक्त सभी विवरण मेरी जानकारी में पूर्णतः सत्य हैं। मुझे पूर्व में किसी भी सरकारी योजना से वर्मी कम्पोस्ट यूनिट हेतु अनुदान प्राप्त नहीं हुआ है। यूनिट की स्थापना व रखरखाव विभागीय दिशा-निर्देशों के अनुसार मेरी जिम्मेदारी होगी।</p><div class="farmer-signature"><div>कृषक का नाम : <strong id="app_farmer_name">${esc(f.name||"…………")}</strong></div><div>कृषक के हस्ताक्षर : ______________________________</div></div></div><div class="st">संलग्न दस्तावेज</div><div class="note">1. खाता-खतौनी की प्रति — 6 माह से अधिक पुरानी नहीं हो।<br>2. आधार कार्ड की प्रति।<br>3. उद्यान कार्ड की प्रति।<br>4. बैंक खाते का विवरण / बैंक पासबुक की प्रति।<br>5. ₹10 का नोटरीकृत शपथ-पत्र।</div><div class="st">8. प्रभारी की आख्या</div><div class="declaration-box prabhari-box"><p>प्रमाणित किया जाता है कि कृषक द्वारा प्रस्तुत आवेदन, भूमि अभिलेख एवं अन्य संबंधित अभिलेखों का परीक्षण कर लिया गया है। आवेदन में अंकित विवरण एवं प्रस्तुत अभिलेख सही पाए गए हैं। अतः कृषक आवेदन <strong>उद्यान विशेषज्ञ, कोटद्वार महोदय की सेवा में वर्क ऑर्डर जारी करने हेतु संस्तुति सहित अग्रसारित</strong> है।</p><p style="margin-top:24px;"><strong>प्रभारी, उद्यान सचल दल केन्द्र</strong><br><strong>केन्द्र का नाम :</strong> ________________________________________________________________</p></div></div>`;\n  document.querySelectorAll("#applicationOut [data-f]").forEach(el=>{ if(S.f[el.dataset.f]!==undefined) el.value=S.f[el.dataset.f]; });\n  let dl=document.getElementById("cropOptions");\n  if(!dl){dl=document.createElement("datalist");dl.id="cropOptions";document.body.appendChild(dl);}\n  dl.innerHTML=["गेहूँ","धान","मक्का","मंडुवा","झंगोरा","दालें","सब्जियाँ","आलू","टमाटर","मिर्च","फूल","सेब","नाशपाती","कीवी","अमरूद","आम","अखरोट","अन्य"].map(x=>`<option value="${esc(x)}">`).join("");\n}\n\nfunction buildVermiAffidavit(){\n  const f=S.f||{};\n  const stdCost=num(S.norm.vStdCost)||33333;\n  const rate=num(S.norm.vRate)||75;\n  const maxSub=num(S.norm.vCap)||24998;\n  const subsidy=Math.min(Math.round(stdCost*rate/100),maxSub);\n  const farmerShare=stdCost-subsidy;\n  const name=esc(f.name||"…………"),father=esc(f.father||"…………"),village=esc(f.village||"…………"),post=esc(f.post||"…………"),tehsil=esc(f.tehsil||"…………"),dist=esc(f.dist||"…………"),horti=esc(f.hortiCard||"…………"),khasra=esc(f.khasra||"…………");\n  document.getElementById("affidavitOut").innerHTML=`<div class="affidavit-doc"><div class="aff-head"><div class="aff-kicker">उद्यान विभाग · वित्तीय वर्ष 2026-27</div><div class="aff-title">शपथ-पत्र</div><div class="aff-sub">(वर्मी कम्पोस्ट यूनिट निर्माण हेतु)</div><div class="aff-line"></div></div><div class="aff-meta"><div><span>नाम</span><b>${name}</b></div><div><span>पिता / पति का नाम</span><b>${father}</b></div><div><span>ग्राम</span><b>${village}</b></div><div><span>डाकघर</span><b>${post}</b></div><div><span>तहसील</span><b>${tehsil}</b></div><div><span>जनपद</span><b>${dist}</b></div><div><span>उद्यान कार्ड संख्या</span><b>${horti}</b></div><div><span>खाता / खतौनी संख्या</span><b>${khasra}</b></div></div><div class="aff-intro">मैं <b>${name}</b> ${G("पुत्र","पुत्री")} <b>${father}</b>, निवासी ग्राम <b>${village}</b>, डाकघर <b>${post}</b>, तहसील <b>${tehsil}</b>, जनपद <b>${dist}</b>, उद्यान कार्ड (कृषक पहचान) संख्या <b>${horti}</b>, शपथपूर्वक कथन ${G("करता","करती")} हूँ कि—</div><div class="aff-item">1. मेरा नाम, पता एवं अन्य व्यक्तिगत विवरण उपर्युक्त अनुसार पूर्णतः सत्य, सही एवं प्रामाणिक हैं।</div><div class="aff-item">2. मेरे द्वारा राज्य सेक्टर योजनान्तर्गत <b>वर्मी कम्पोस्ट यूनिट निर्माण हेतु</b> उद्यान विभाग में विधिवत आवेदन किया गया है।</div><div class="aff-item">3. जिस भूमि पर वर्मी कम्पोस्ट यूनिट का निर्माण किया गया है, वह भूमि मेरे वैधानिक स्वामित्व एवं वास्तविक कब्जे में है। ग्राम: <b>${village}</b> · खाता संख्या: <b>${khasra}</b></div><div class="aff-item">4. मेरे द्वारा उक्त भूमि पर विभागीय मानकों के अनुसार <b>10 फीट × 8 फीट × 2.5 फीट आकार की पक्की वर्मी कम्पोस्ट यूनिट</b> का निर्माण किया गया है।</div><div class="aff-item">5. उक्त वर्मी कम्पोस्ट यूनिट की प्रो-रेटा लागत <b>₹${stdCost.toLocaleString("en-IN")}/-</b>, देय ${rate}% राजसहायता <b>₹${subsidy.toLocaleString("en-IN")}/-</b> तथा कृषक का ${100-rate}% अंशदान <b>₹${farmerShare.toLocaleString("en-IN")}/-</b> है।</div><div class="aff-item">6. इससे पूर्व मेरे द्वारा उक्त यूनिट हेतु किसी अन्य सरकारी विभाग / संस्था / योजना से कोई अनुदान प्राप्त नहीं किया गया है।</div><div class="aff-item">7. मेरे द्वारा प्रस्तुत समस्त दस्तावेज, भूमि अभिलेख, बैंक विवरण, बिल / वाउचर एवं अन्य जानकारी सत्य एवं सही है।</div><div class="aff-item">8. यूनिट का निर्माण विभागीय तकनीकी मानकों एवं दिशा-निर्देशों के अनुरूप किया गया है। भिन्नता पाए जाने पर उसकी जिम्मेदारी मेरी होगी।</div><div class="aff-item">9. यूनिट के रख-रखाव, सफाई, संचालन, केंचुओं की देखभाल एवं नमी बनाए रखने की जिम्मेदारी मेरी होगी।</div><div class="aff-item">10. कोई जानकारी असत्य या भ्रामक पाए जाने पर विभाग को आवेदन / राजसहायता निरस्त करने तथा प्राप्त राशि की वसूली करने का अधिकार होगा।</div><div class="aff-item">11. मैं योजना की निर्धारित शर्तों एवं विभागीय दिशा-निर्देशों से सहमत हूँ।</div><div class="aff-decl">मैं यह शपथ-पत्र पूर्ण होश-हवास में, बिना किसी दबाव, प्रलोभन अथवा भय के, अपनी स्वेच्छा से सत्यनिष्ठा के साथ दे रहा / रही हूँ।</div><div class="aff-sign"><div class="box">स्थान: ${esc(f.place||"…………")}<br>दिनांक: ${esc(f.date||"…………")}</div><div class="box line">${G("शपथकर्ता","शपथकर्त्री")} के हस्ताक्षर<br>${name}<br>मोबाइल: ${esc(f.mob||"…………")}</div></div></div>`;\n}\n\nfunction updateApplicationDerived(){\n  if(cur!=="application" || !document.getElementById("applicationOut")) return;\n  if(S.scheme!=="fencing"){\n    const fn=document.getElementById("app_farmer_name"); if(fn)fn.textContent=S.f.name||"…………";\n    return;\n  }\n  const d=applicationData();\n  const rate=num(S.norm.fRate);\n  const standard = d.totalHec>0 ? Math.round(d.totalHec*(num(S.norm.fCostHa)||200000)) : 0;\n  const subsidy=standard>0 ? Math.round(standard*rate/100) : 0;\n  const set=(id,v)=>{const el=document.getElementById(id); if(el) el.textContent=v;};\n  const ownAad = document.querySelector("#applicationOut .landSelfAadhaar"); if(ownAad) ownAad.value = S.f.aadhar || "";\n  const h3=document.querySelector("#applicationOut h3"); if(h3) h3.textContent = (S.f.planType||"जिला योजना")+" अन्तर्गत "+fenceHeading()+" हेतु";\n  const totalCell=document.querySelector("#applicationOut .landtable .tot .calc"); if(totalCell) totalCell.textContent=fmtN(d.totalHec);\n  document.querySelectorAll("#applicationOut .landVil").forEach(el=>{ el.value = S.f.village||""; });\n  document.querySelectorAll("#applicationOut .landSelfName").forEach(el=>{ el.value = S.f.name||""; });\n  document.querySelectorAll("#applicationOut .landSelfFather").forEach(el=>{ el.value = S.f.father||""; });\n  set("sumHec", d.totalHec>0?d.totalHec.toFixed(2):"—"); set("sumLen", d.exact?d.exact.len:"—"); set("sumPoles", d.exact?d.exact.poles:"—"); set("sumCost", fmt0(standard)); set("sumSubsidy", fmt0(subsidy)); set("appCertName", S.f.name||"");\n}\n\nfunction buildApplication(){\n  if(S.scheme==="fencing"){\n    document.querySelector(\'[data-v="application"] .head\').textContent = "फेंसिंग आवेदन पत्र";\n    document.getElementById("appLead").textContent = fenceHeading()+" / घेरबाड़ के लिए आवेदन पत्र।";\n    buildFencingApplication();\n  }else{\n    document.querySelector(\'[data-v="application"] .head\').textContent = "वर्मी कम्पोस्ट आवेदन पत्र";\n    document.getElementById("appLead").textContent = "वर्मी कम्पोस्ट इकाई निर्माण हेतु आवेदन पत्र।";\n    buildVermiApplication();\n  }\n}\n\nfunction buildAffidavit(){\n  if(S.scheme==="vermicompost"){\n    document.querySelector(\'[data-v="affidavit"] .head\').textContent = "शपथ-पत्र";\n    document.getElementById("affLead").textContent = "वर्मी कम्पोस्ट यूनिट निर्माण हेतु शपथ-पत्र।";\n    buildVermiAffidavit();\n  }\n}\n\nconst L = (lab,k,cls="") => `<div class="r"><b>${lab}</b><input class="ln ${cls}" data-f="${k}" value="${esc(S.f[k]||"")}"></div>`;\nconst LR = (lab,k) => `<div class="r"><b>${lab}</b><span class="auto">${esc(S.f[k]||"…………")}</span></div>`;\n\nfunction buildFencingBill(){\n  const c = calc();\n  const schemeName = S.f.planType || "—";\n  const title = `${fenceHeading()} / घेरबाड़ — राजसहायता देयक`;\n  const kaam = fenceKaamPhrase();\n  const planLabel = S.f.planType || "जिला योजना";\n  let tbl = `<table><thead><tr><th style="width:44px">क्र०</th><th>कार्य का विवरण</th><th style="width:116px">कुल धनराशि</th><th style="width:138px">राजसहायता</th><th style="width:128px">कृषक द्वारा वहन</th><th style="width:88px">अभ्युक्ति</th></tr></thead><tbody>`;\n  c.rows.forEach((r,i)=>{ tbl+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(r.name)}</td><td class="calc num" id="r${i}a"></td><td class="calc num" id="r${i}s"></td><td class="calc num" id="r${i}o"></td><td></td></tr>`; });\n  tbl+=`<tr class="tot"><td colspan="2" style="text-align:right">योग</td><td class="calc num" id="tA"></td><td class="calc num" id="tS"></td><td class="calc num" id="tO"></td><td></td></tr></tbody></table>`;\n  document.getElementById("billOut").innerHTML = `<div class="doc bill-doc"><div class="bill-header"><div class="bill-kicker">उद्यान विभाग · राजसहायता प्रपत्र</div><h3 class="bill-title">${title}</h3><div class="bill-rule"></div><div class="bill-meta"><div><span>योजना</span><b>${schemeName}</b></div><div><span>कार्यालय</span><b>उद्यान विशेषज्ञ, कोटद्वार (गढ़वाल)</b></div><div><span>वित्तीय वर्ष</span><b>2026-27</b></div></div></div><div class="serial-layout"><div class="serial-section"><div class="serial-title">1. कृषक का विवरण</div><div class="kv">${LR("नाम कृषक:","name")}${LR("पिता / पति:","father")}${LR("ग्राम:","village")}${LR("पोस्ट ऑफिस:","post")}${LR("विकास खण्ड:","block")}${LR("जनपद:","dist")}${LR("आधार:","aadhar")}${LR("मोबाइल:","mob")}<div class="r"><b>वर्ग:</b><span class="auto">${esc(S.f.cat||"…………")}</span><b>· दर:</b><span class="auto" id="oRate"></span></div></div></div><div class="serial-section"><div class="serial-title">2. बैंक विवरण</div><div class="kv">${LR("बैंक:","bank")}${LR("शाखा:","branch")}${LR("खाता संख्या:","acct")}${LR("IFSC:","ifsc")}</div></div><div class="serial-section"><div class="serial-title">3. फेंसिंग एवं भूमि का विवरण</div><div class="kv"><div class="r"><b>फेंसिंग सामग्री:</b><span class="auto">${esc(fenceMaterialName())}</span></div><div class="r"><b>प्रस्तावित भूमि:</b><span class="auto" id="oArea">…………</span></div><div class="r"><b>अनुमन्य लम्बाई:</b><span class="auto" id="oFenceLen">…………</span> मी०</div><div class="r"><b>अनुमन्य खम्बे:</b><span class="auto" id="oPoles">…………</span> नग</div></div></div><div class="serial-section"><div class="serial-title">4. एम०बी० मूल्यांकन</div><div class="kv"><div class="r"><b>मापी लम्बाई:</b><input class="ln rt sm" data-f="mbLen" inputmode="decimal" value="${esc(S.f.mbLen||"")}"><b> मी०</b></div><div class="r"><b>अथवा एम०बी० धनराशि:</b><input class="ln rt sm" data-f="mbAmt" inputmode="decimal"><b> ₹</b></div><div class="r"><b>एम०बी० धनराशि:</b><span class="auto" id="oMb"></span></div></div></div><div class="serial-section"><div class="serial-title">5. स्थलीय सत्यापन</div><div class="kv"><div class="r"><b>अनुमन्य लम्बाई:</b><span class="auto" id="oAllowed"></span> मी०</div><div class="r"><b>सत्यापित लम्बाई:</b><input class="ln rt sm" data-f="verifiedLen" inputmode="decimal"><b> मी०</b></div><div class="r"><b>कमी:</b><span class="auto" id="oShort"></span> मी०</div><div class="r"><b>वास्तविक क्षेत्रफल:</b><span class="auto" id="oActualArea"></span> हे०</div><div class="r"><b>मानक लागत:</b><span class="auto" id="oStdCost"></span></div></div></div></div><div class="bill-table-heading"><div class="bill-table-title">कृषक द्वारा प्रस्तुत कार्य एवं व्यय का विवरण</div><div class="bill-table-subtitle">प्रस्तुत बिल / वाउचर के आधार पर</div></div>${tbl}<div id="oFlag"></div><div class="xbox"><div class="xh">राजसहायता की गणना — तीनों में से न्यूनतम</div><table><tbody><tr><td>बिल / वाउचर के अनुसार कुल व्यय</td><td class="v" id="xBill"></td></tr><tr><td>एम०बी० मूल्यांकन धनराशि</td><td class="v" id="xMb"></td></tr><tr><td>मानक लागत (वास्तविक क्षेत्रफल × ₹2,00,000)</td><td class="v" id="xStdCost"></td></tr><tr><td>राजसहायता हेतु स्वीकार्य आधार — न्यूनतम</td><td class="v" id="xBase"></td></tr><tr><td>लागू राजसहायता दर</td><td class="v" id="xRate"></td></tr><tr class="hi"><td><b>देय राजसहायता धनराशि</b></td><td class="v" id="xSub"></td></tr><tr><td>कृषक द्वारा वहन की गयी धनराशि</td><td class="v" id="xOwn"></td></tr></tbody></table></div><p style="margin:10px 0 0"><b>संलग्न:</b> बिल वाउचर, एम०बी०, जियो टैग फोटोग्राफ आदि।</p><div class="decl">प्रमाणित किया जाता है कि मेरे द्वारा ${planLabel} अन्तर्गत ${kaam} पर उक्तानुसार धनराशि व्यय की गई है। अतः राजसहायता की धनराशि <span class="blank" id="oSub1"></span> (<span id="oWords1"></span> रुपये मात्र) का भुगतान मुझे करने की कृपा कीजिएगा।</div><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:20px"><div style="flex:0 0 auto"><div style="display:flex;gap:6px;align-items:baseline"><b>दिनांक:</b><input class="ln sm" type="date" data-f="date"></div><div style="display:flex;gap:6px;align-items:baseline;margin-top:8px"><b>स्थान:</b><input class="ln sm" data-f="place"></div></div><div style="text-align:center;min-width:240px;border-top:1px solid #16281E;padding-top:5px">हस्ताक्षर ${G("कृषक","कृषिका")}<br><span class="auto" id="oName"></span></div></div></div>`;\n  document.querySelectorAll("#billOut [data-f]").forEach(el=>{ if(S.f[el.dataset.f]!==undefined) el.value = S.f[el.dataset.f]; });\n  refresh();\n}\n\nfunction buildVermiBill(){\n  const c=calc();\n  const stdCost=num(S.norm.vStdCost)||33333;\n  const maxSub=num(S.norm.vCap)||24998;\n  const rate=num(S.norm.vRate)||75;\n  let tbl=`<table><thead><tr><th style="width:44px">क्र०</th><th>कार्य / सामग्री</th><th style="width:140px" class="num">बिल राशि (₹)</th></tr></thead><tbody>`;\n  c.rows.forEach((r,i)=>{ tbl+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(r.name)}</td><td class="calc num" id="r${i}a"></td></tr>`; });\n  tbl+=`<tr class="tot"><td colspan="2" style="text-align:right">योग</td><td class="calc num" id="tA"></td></tr></tbody></table>`;\n  document.getElementById("billOut").innerHTML=`<div class="doc bill-doc"><div class="bill-header"><div class="bill-kicker">उद्यान विभाग · राजसहायता प्रपत्र</div><h3 class="bill-title">वर्मी कम्पोस्ट इकाई — राजसहायता देयक</h3><div class="bill-rule"></div><div class="bill-meta"><div><span>योजना</span><b>राज्य सेक्टर योजना</b></div><div><span>कार्यालय</span><b>उद्यान विशेषज्ञ, कोटद्वार (गढ़वाल)</b></div><div><span>वित्तीय वर्ष</span><b>2026-27</b></div></div></div><div class="serial-layout"><div class="serial-section"><div class="serial-title">एम०बी० मूल्यांकन</div><div class="kv"><div class="r"><b>एम०बी० मूल्यांकन धनराशि (₹):</b><input class="ln rt sm" data-f="mbAmt" inputmode="decimal"></div></div></div><div class="serial-section"><div class="serial-title">1. कृषक का विवरण</div><div class="kv">${LR("नाम कृषक:","name")}${LR("पिता / पति:","father")}${LR("ग्राम:","village")}${LR("विकास खण्ड:","block")}${LR("जनपद:","dist")}${LR("आधार:","aadhar")}${LR("मोबाइल:","mob")}</div></div><div class="serial-section"><div class="serial-title">2. बैंक विवरण</div><div class="kv">${LR("बैंक:","bank")}${LR("शाखा:","branch")}${LR("खाता संख्या:","acct")}${LR("IFSC:","ifsc")}</div></div><div class="serial-section"><div class="serial-title">3. इकाई का विवरण</div><div class="kv"><div class="r"><b>यूनिट का आकार:</b><span class="auto">10 फीट × 8 फीट × 2.5 फीट (पक्की संरचना)</span></div><div class="r"><b>मानक लागत:</b><span class="auto">₹ ${stdCost.toLocaleString("en-IN")}</span></div><div class="r"><b>राजसहायता दर:</b><span class="auto">${rate}%</span></div></div></div></div><div class="bill-table-heading"><div class="bill-table-title">कृषक द्वारा प्रस्तुत कार्य एवं व्यय का विवरण</div><div class="bill-table-subtitle">प्रस्तुत बिल / वाउचर के आधार पर</div></div>${tbl}<div class="xbox"><div class="xh">राजसहायता की गणना — तीनों में से न्यूनतम</div><table><tbody><tr><td>बिल / वाउचर के अनुसार कुल व्यय</td><td class="v" id="xBill"></td></tr><tr><td>एम०बी० मूल्यांकन धनराशि</td><td class="v" id="xMb"></td></tr><tr><td>मानक लागत (10 फीट × 8 फीट × 2.5 फीट)</td><td class="v" id="xStdCost"></td></tr><tr class="hi"><td><b>राजसहायता हेतु स्वीकार्य आधार — उपरोक्त में से न्यूनतम</b></td><td class="v" id="xBase"></td></tr><tr><td>लागू राजसहायता दर</td><td class="v" id="xRate"></td></tr><tr class="hi"><td><b>देय राजसहायता धनराशि</b></td><td class="v" id="xSub"></td></tr><tr><td>कृषक अंश (आधार × शेष दर — मानक अनुसार)</td><td class="v" id="xShare"></td></tr><tr><td>मानक की अधिकतम अनुदान सीमा (मानक लागत × दर)</td><td class="v" id="xMax"></td></tr><tr><td>मानक से कम हुई लागत (कमी के कारण)</td><td class="v" id="xShort"></td></tr><tr><td>कृषक द्वारा वहन की गयी वास्तविक धनराशि (बिल − राजसहायता)</td><td class="v" id="xOwn"></td></tr></tbody></table></div><div class="note-box"><div class="note-title">महत्वपूर्ण नोट — वर्मी कम्पोस्ट इकाई की गणना</div>• मानक लागत: एक इकाई (10 फीट × 8 फीट × 2.5 फीट) हेतु निर्धारित ₹${stdCost.toLocaleString("en-IN")}।<br>• देय आधार: बिल / वाउचर राशि, एम०बी० मूल्यांकन धनराशि एवं मानक लागत — इनमें से न्यूनतम राशि (<span id="xBase2"></span>)।<br>• कृषक अंश: आधार राशि पर लागू शेष दर (${100-rate}%) के अनुसार।<br>• कृषक द्वारा वहन की गयी वास्तविक धनराशि: बिल राशि में से देय राजसहायता घटाकर।</div><p style="margin:10px 0 0"><b>संलग्न:</b> बिल / वाउचर, एम०बी० (मापपुस्तिका), जियो टैग कलर फोटोग्राफ, कृषक का शपथ-पत्र आदि।</p><div class="decl">प्रमाणित किया जाता है कि मेरे द्वारा राज्य सेक्टर योजना अन्तर्गत वर्मी कम्पोस्ट इकाई के निर्माण पर उक्तानुसार धनराशि व्यय की गई है। अतः राजसहायता की धनराशि <span class="blank" id="oSub1"></span> (<span id="oWords1"></span> रुपये मात्र) का भुगतान मुझे करने की कृपा कीजिएगा।</div><div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:20px"><div style="flex:0 0 auto"><div style="display:flex;gap:6px;align-items:baseline"><b>दिनांक:</b><input class="ln sm" type="date" data-f="date"></div><div style="display:flex;gap:6px;align-items:baseline;margin-top:8px"><b>स्थान:</b><input class="ln sm" data-f="place"></div></div><div style="text-align:center;min-width:240px;border-top:1px solid #16281E;padding-top:5px">हस्ताक्षर ${G("कृषक","कृषिका")}<br><span class="auto" id="oName"></span></div></div></div>`;\n  document.querySelectorAll("#billOut [data-f]").forEach(el=>{ if(S.f[el.dataset.f]!==undefined) el.value = S.f[el.dataset.f]; });\n  refresh();\n}\n\nfunction buildBill(){\n  if(S.scheme==="fencing"){\n    document.querySelector(\'[data-v="bill"] .head\').textContent = "देयक प्रपत्र";\n    document.getElementById("billLead").textContent = "सीधे प्रपत्र पर ही भरें।";\n    buildFencingBill();\n  }else{\n    document.querySelector(\'[data-v="bill"] .head\').textContent = "देयक प्रपत्र";\n    document.getElementById("billLead").textContent = "वर्मी कम्पोस्ट इकाई — राजसहायता देयक प्रपत्र।";\n    buildVermiBill();\n  }\n}\n\nconst set = (id,v) => { const el=document.getElementById(id); if(el) el.innerHTML=v; };\nfunction refresh(){\n  const c = calc();\n  c.rows.forEach((r,i)=>{ set("r"+i+"a",fmtN(r.amt)); set("r"+i+"s",fmtN(r.sub)); set("r"+i+"o",fmtN(r.own)); });\n  set("tA",fmtN(c.bill)); set("tS",fmtN(c.sub)); set("tO",fmtN(c.own));\n  if(S.scheme==="fencing"){\n    set("oRate",(c.rate*100).toFixed(0)+"%");\n    const m = fenceStandard(c.hec);\n    set("oArea", c.hec>0 ? c.hec.toFixed(2) : "…………");\n    set("oFenceLen", m ? fmtN(m.len).replace(/\\.00$/,"") : "…………");\n    set("oPoles", m ? fmtN(m.poles).replace(/\\.00$/,"") : "…………");\n    set("oMb", c.mb ? fmt0(c.mb) : "—");\n    set("oAllowed", c.allowedLen ? fmtN(c.allowedLen).replace(/\\.00$/,"") : "…………");\n    set("oShort", c.shortfall>0 ? fmtN(c.shortfall).replace(/\\.00$/,"") : "0");\n    set("oActualArea", c.actualArea>0 ? Number(c.actualArea).toFixed(2) : "…………");\n    set("oStdCost", c.standardCost ? fmt0(c.standardCost) : "—");\n    set("xBill", c.bill?fmt0(c.bill):"—"); set("xMb", c.mb?fmt0(c.mb):"—"); set("xStdCost", c.standardCost ? fmt0(c.standardCost) : "—");\n    set("xBase",fmt0(c.base)); set("xRate",(c.rate*100).toFixed(0)+"%"); set("xSub",fmt0(c.sub)); set("xOwn",fmt0(c.own));\n    set("oSub1",fmt0(c.sub)); set("oWords1",words(c.sub)); set("oName", esc(S.f.name)||"…………");\n    document.getElementById("sBill").textContent = fmt0(c.bill);\n    document.getElementById("sMb").textContent = c.mb?fmt0(c.mb):"—";\n    document.getElementById("sSub").textContent = fmt0(c.sub);\n    document.getElementById("sOwn").textContent = fmt0(c.own);\n    document.getElementById("sRate").textContent = c.bill?`(${(c.rate*100).toFixed(0)}%)`:"";\n    const msg=document.getElementById("sMsg");\n    msg.className = "msg" + (c.over?" bad":"");\n    msg.textContent = !c.bill ? "व्यय विवरण भरना प्रारम्भ करें" : c.over ? `बिल एम०बी० से ${fmt0(c.bill-c.mb)} अधिक` : `राजसहायता शब्दों में: ${words(c.sub)} रुपये मात्र`;\n  }else{\n    set("xBill", c.bill?fmt0(c.bill):"—"); set("xMb", c.mb?fmt0(c.mb):"—");\n    set("xStdCost", fmt0(c.standardCost));\n    set("xBase",fmt0(c.base)); set("xRate",(c.rate*100).toFixed(0)+"%"); set("xSub",fmt0(c.sub));\n    set("xShare",fmt0(c.base-c.sub)); set("xMax",fmt0(c.cap||24998)); set("xShort",fmt0(c.shortfall)); set("xOwn",c.bill>0?fmt0(c.own):"—");\n    set("xBase2",fmt0(c.base)); set("oSub1",fmt0(c.sub)); set("oWords1",words(c.sub)); set("oName",esc(S.f.name)||"…………");\n  }\n  save();\n}\nfunction refreshWorkTotals(){ document.querySelectorAll("#workBody table").forEach(tb=>{ const t = tb.querySelector("[data-tot]"); if(!t) return; const k = t.dataset.tot, cfg = COLS[k]; tb.querySelectorAll("tbody tr").forEach((tr,i)=>{ if(i<(S[k]||[]).length){ const cell=tr.querySelector("td.calc"); if(cell) cell.textContent=fmtN(cfg.amt(S[k][i])); } }); t.textContent = fmtN(sum(k)); }); refresh(); }\n\nlet cur="work";\nfunction show(v){\n  cur=v;\n  document.querySelectorAll(".view").forEach(s=>{ s.classList.toggle("on", s.dataset.v===v); s.classList.remove("print-target"); });\n  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on", a.dataset.go===v));\n  if(v==="application"){ buildApplication(); }\n  else if(v==="affidavit"){ buildAffidavit(); }\n  else if(v==="work"){ buildWork(); refresh(); }\n  else if(v==="bill"){ buildBill(); }\n  window.scrollTo(0,0);\n}\n\n/* ═══ FIXED INPUT HANDLER — no rebuild on input ═══ */\ndocument.addEventListener("input", e=>{\n  const t=e.target;\n  if(t.id==="scheme") return;\n  if(t.dataset && t.dataset.vc){ const i=+t.dataset.vc, k=t.dataset.k; if(!S.vcrops) S.vcrops=[{}]; if(!S.vcrops[i]) S.vcrops[i]={}; S.vcrops[i][k]=t.value; save(); return; }\n  if(t.dataset && t.dataset.land){\n    const i=+t.dataset.land, k=t.dataset.k;\n    if(!S.landRows) S.landRows=[{relation:"स्वयं"},{relation:"भाई"},{relation:"पुत्र"},{relation:"पिता"},{relation:"अन्य"}];\n    if(["relation","hec","name","father","khasra","aadhaar"].includes(k)) S.landRows[i][k]=t.value;\n    updateApplicationDerived(); save(); return;\n  }\n  if(t.dataset && t.dataset.f){\n    S.f[t.dataset.f]=t.value; save();\n    refresh();\n    if(S.scheme==="fencing" && cur==="application") updateApplicationDerived();\n    if(S.scheme!=="fencing" && cur==="application"){ const fn=document.getElementById("app_farmer_name"); if(fn) fn.textContent=S.f.name||"…………"; }\n    return;\n  }\n  if(t.dataset && t.dataset.norm){ S.norm[t.dataset.norm]=t.value; save(); refresh(); }\n  else if(t.dataset && t.dataset.row){ S[t.dataset.row][+t.dataset.i][t.dataset.k]=t.value; refreshWorkTotals(); }\n});\n\n/* ═══ FIXED CHANGE HANDLER — rebuild only for selects ═══ */\ndocument.addEventListener("change", e=>{\n  const t=e.target;\n  if(t.id==="scheme"){ S.scheme=t.value; save(); buildNav(); toggleStrip(); show("work"); return; }\n  if(t.dataset && t.dataset.f){\n    S.f[t.dataset.f]=t.value; save();\n    if(S.scheme==="fencing"){\n      if(LANG_FIELDS.includes(t.dataset.f)){ rebuildDocs(); save(); }\n      else if(cur==="application") updateApplicationDerived();\n    } else {\n      if(t.dataset.f==="gender"){\n        if(cur==="application") buildVermiApplication();\n        if(cur==="affidavit") buildVermiAffidavit();\n      }\n    }\n    refresh();\n    return;\n  }\n  if(t.id==="appRate"){ S.norm.fRate=t.value; save(); refresh(); if(cur==="application") updateApplicationDerived(); return; }\n  if(t.dataset && t.dataset.land){\n    const i=+t.dataset.land, k=t.dataset.k;\n    if(!S.landRows) S.landRows=[]; if(!S.landRows[i]) S.landRows[i]={relation:"",hec:"",aadhaar:""};\n    S.landRows[i][k]=t.value;\n    if(cur==="application") buildApplication(); save(); return;\n  }\n  const listId = t.getAttribute && t.getAttribute("list");\n  if(listId && DL[listId] && t.value.trim() && !S.lists[DL[listId]].includes(t.value.trim())){\n    S.lists[DL[listId]].push(t.value.trim()); buildLists(); save();\n  }\n});\n\ndocument.addEventListener("click", e=>{\n  const b=e.target.closest("[data-add],[data-del],[data-go],[data-land-del],#addLandRow,#addCropBtn,[data-vcdel]");\n  if(!b) return;\n  if(b.id==="addLandRow"){ if(!S.landRows) S.landRows=[]; S.landRows.push({relation:"अन्य",name:"",father:"",khasra:"",aadhaar:"",hec:""}); buildApplication(); save(); return; }\n  if(b.id==="addCropBtn"){ if(!S.vcrops) S.vcrops=[]; S.vcrops.push({name:"",area:""}); buildApplication(); save(); return; }\n  if(b.dataset.vcdel!==undefined){ const i=+b.dataset.vcdel; if(S.vcrops && i<S.vcrops.length){ S.vcrops.splice(i,1); buildApplication(); save(); } return; }\n  if(b.dataset.landDel!==undefined){ const i=+b.dataset.landDel; if(i>0 && S.landRows && i<S.landRows.length){ S.landRows.splice(i,1); buildApplication(); save(); } return; }\n  if(b.dataset.add){ S[b.dataset.add].push({}); buildWork(); refresh(); }\n  else if(b.dataset.del){ const k=b.dataset.del; S[k].splice(+b.dataset.i,1); if(!S[k].length) S[k].push({}); buildWork(); refresh(); }\n  else if(b.dataset.go){ show(b.dataset.go); }\n});\n\ndocument.getElementById("bGo").onclick = ()=>show("bill");\ndocument.getElementById("bPrint").onclick = ()=>{\n  document.querySelectorAll(".view").forEach(v=>v.classList.remove("print-target"));\n  const target=document.querySelector(`.view[data-v="${cur}"]`);\n  if(target){ target.classList.add("print-target"); window.print(); }\n};\ndocument.getElementById("bNew").onclick = ()=>{ if(confirm("सारी प्रविष्टि मिट जाएगी। नया प्रपत्र खोलें?")){ S=blank(); document.getElementById("scheme").value=S.scheme; buildNav(); toggleStrip(); show("work"); } };\ndocument.getElementById("bSave").onclick = ()=>{ const nm=(S.f.name||"कृषक").replace(/\\s+/g,"_"); const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(S,null,1)],{type:"application/json"})); a.download=`अनुदान_${nm}.json`; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000); };\ndocument.getElementById("bOpen").onclick = ()=>document.getElementById("fileIn").click();\ndocument.getElementById("fileIn").onchange = e=>{ const fl=e.target.files[0]; if(!fl) return; const r=new FileReader(); r.onload=()=>{ try{ S=Object.assign(blank(), JSON.parse(r.result)); document.getElementById("scheme").value=S.scheme; buildNav(); toggleStrip(); show("work"); } catch(err){ alert("यह फाइल पढ़ी नहीं जा सकी।"); } }; r.readAsText(fl); e.target.value=""; };\n\ntry{\n  const r=localStorage.getItem(KEY);\n  if(r){\n    S=Object.assign(blank(), JSON.parse(r));\n    if(S.scheme!=="fencing" && S.scheme!=="vermicompost") S.scheme="fencing";\n    S.landRows=(S.landRows||[]).map(x=>({relation:x.relation||"",name:x.name||"",father:x.father||"",khasra:x.khasra||"",hec:(x.hec!==undefined?x.hec:"")}));\n    while(S.landRows.length<5) S.landRows.push({relation:"",name:"",father:"",khasra:"",hec:""});\n    if(S.landRows.length>5) S.landRows=S.landRows.slice(0,5);\n    if(!S.vcrops) S.vcrops=[{name:"",area:""}];\n    if(!S.vermi) S.vermi=[{}];\n  }\n}catch(e){}\ndocument.getElementById("scheme").value = S.scheme;\nbuildNav();\ntoggleStrip();\nshow("work");\n';
+const API_FENCING =
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/fencing-kisan/";
+const API_FENCING_LAND_DETAILS =
+  "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/fencing-land-details/";
+
+const centerStore = { value: "" };
+const readCenterName = () => (centerStore.value || "").trim();
+const centerLine = () => readCenterName() || "……………………";
+
+const HTML_BODY = `
+<style>
+.required-star{color:#dc2626;font-weight:800;margin-left:3px}
+.required-field{border-bottom:1px solid #dc2626!important}
+.required-field:focus{outline:2px solid rgba(220,38,38,.18);outline-offset:2px}
+.landtable input.landVil,.landtable input.landSelfName,.landtable input.landSelfFather,.landtable input.landSelfAadhaar{
+  background:#EEF1EC;color:var(--ink-soft,#4A5A50);border-color:var(--rule,#C6CDC4);cursor:default
+}
+</style>
+<div class="shell">
+  <header class="topbar noprint">
+    <div class="topbar-brand">
+      <h1>अनुदान देयक प्रपत्र</h1>
+      <p class="sub">कार्यालय — उद्यान विशेषज्ञ, कोटद्वार (गढ़वाल) · वित्तीय वर्ष 2026-27</p>
+    </div>
+    <div class="topbar-scheme">
+      <label class="tk">योजना</label>
+      <select id="scheme">
+        <option value="fencing">चेनलिंक फेंसिंग / घेरबाड़</option>
+      </select>
+    </div>
+    <div class="topbar-formid">
+      <label class="tk">चयनित फॉर्म</label>
+      <span class="fid" id="curFormId">— कोई फॉर्म चयनित नहीं —</span>
+    </div>
+  </header>
+  <nav id="nav" class="tabs noprint">
+    <a data-tab="register" class="on">उपयोगकर्ता पंजीकरण</a>
+    <button type="button" class="tabs-preview" id="bPreview">प्रिंट पूर्वावलोकन</button>
+  </nav>
+  <div class="api-msg noprint" id="apiMsg" hidden></div>
+  <main>
+    <section class="view on" data-v="register">
+      <h2 class="head">उपयोगकर्ता पंजीकरण</h2>
+      <p class="lead">पहले कृषक का पंजीकरण करें — इससे सर्वर पर फॉर्म आईडी बन जाती है। उसी फॉर्म आईडी पर आगे आवेदन, व्यय विवरण एवं देयक प्रपत्र भरा जाता है।</p>
+      <div class="card">
+        <div class="cap"><i></i>नया पंजीकरण<small>POST — फॉर्म आईडी स्वतः बनेगी</small></div>
+        <div class="pad">
+          <form id="regForm" class="grid" autocomplete="off">
+            <div><label class="f">कृषक का नाम</label><input id="regName" placeholder="पूरा नाम"></div>
+            <div><label class="f">मोबाइल नंबर</label><input id="regMob" inputmode="numeric" maxlength="10" placeholder="10 अंक"></div>
+            <div><label class="f">केंद्र / कार्यालय का नाम</label><input id="regCenter" readonly disabled></div>
+            <div class="reg-actions">
+              <button type="submit" class="addrow solid">पंजीकरण करें</button>
+              <button type="button" class="addrow" id="regRefresh">सूची ताज़ा करें</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <div class="card">
+        <div class="cap"><i></i>पंजीकृत कृषक एवं फॉर्म<small id="regCount"></small></div>
+        <div class="pad">
+          <div class="table-scroll">
+            <table class="reg-table">
+              <thead><tr>
+                <th style="width:48px">क्र०</th><th>फॉर्म आईडी</th><th>कृषक का नाम</th><th>मोबाइल</th>
+                <th>केंद्र</th><th>योजना</th><th>उद्यान कार्ड</th><th>पौधे</th>
+                <th>क्षेत्रफल (हे०)</th><th>देय राजसहायता</th><th>स्थिति</th>
+                <th style="width:160px">क्रिया</th>
+              </tr></thead>
+              <tbody id="regRows"><tr><td colspan="12" class="empty">लोड हो रहा है…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="view" data-v="filling">
+      <div class="subtabs noprint" id="subnav">
+        <a data-go="application" class="on">आवेदन पत्र</a>
+        <a data-go="work">व्यय विवरण</a>
+        <a data-go="bill">देयक प्रपत्र</a>
+      </div>
+      <section class="view on" data-v="application">
+        <h2 class="head">आवेदन पत्र</h2>
+        <p class="lead">चेनलिंक फेंसिंग / घेरबाड़ के लिए आवेदन पत्र — उद्यान कार्ड, पौधों की संख्या, भूमि और फेंसिंग mapping के अनुसार।</p>
+        <div id="applicationOut"></div>
+      </section>
+      <section class="view" data-v="work">
+        <h2 class="head">व्यय विवरण</h2>
+        <p class="lead" id="workLead"></p>
+        <div class="card" id="standardsCard">
+          <div class="cap">
+            <i></i><span id="standardsTitle">राजसहायता के मानक</span>
+            <small>प्रपत्र पर नहीं छपेंगे — यहीं से अपडेट करें</small>
+          </div>
+          <div class="pad" id="standardsBody"></div>
+        </div>
+        <div id="workBody"></div>
+      </section>
+      <section class="view" data-v="bill">
+        <h2 class="head">देयक प्रपत्र</h2>
+        <p class="lead">सीधे प्रपत्र पर ही भरें — जहाँ बिन्दु बने हैं वहीं लिखते जाएँ। तालिका, राजसहायता और शब्दों में राशि अपने आप भरती जाएगी।</p>
+        <div class="card noprint" id="billSaveCard">
+          <div class="cap"><i></i>सर्वर पर सहेजें<small>सभी चरण एक साथ</small></div>
+          <div class="pad reg-actions">
+            <button type="button" class="addrow solid" id="btnSaveAll">सम्पूर्ण प्रपत्र सहेजें</button>
+            <span class="save-hint" id="saveAllHint"></span>
+          </div>
+        </div>
+        <div id="billOut"></div>
+      </section>
+    </section>
+  </main>
+</div>
+<div id="datalists" hidden></div>
+<div class="strip noprint">
+  <div class="cell"><div class="k">बिल का कुल योग</div><div class="v num" id="sBill">₹ 0</div></div>
+  <div class="cell"><div class="k">एम०बी० मूल्यांकन</div><div class="v num" id="sMb">—</div></div>
+  <div class="cell pay"><div class="k">देय राजसहायता <span id="sRate"></span></div><div class="v num" id="sSub">₹ 0</div></div>
+  <div class="cell"><div class="k">कृषक द्वारा वहन</div><div class="v num" id="sOwn">₹ 0</div></div>
+</div>
+<div class="pv-overlay noprint" id="pvOverlay" hidden>
+  <div class="pv-box" role="dialog" aria-modal="true" aria-label="प्रिंट पूर्वावलोकन">
+    <div class="pv-head">
+      <span class="pv-title" id="pvTitle">प्रिंट पूर्वावलोकन</span>
+      <span class="pv-actions">
+        <button type="button" class="pv-btn" id="pvPrint">प्रिंट करें</button>
+        <button type="button" class="pv-btn close" id="pvClose">बंद करें</button>
+      </span>
+    </div>
+    <div class="pv-body" id="pvBody"></div>
+  </div>
+</div>
+`;
 
 export default function KisanAavedanPortal() {
   const rootRef = useRef(null);
+  const docListeners = useRef(null);
+  const { user } = useAuth();
+  const centerName = useMemo(() => getCenterNameFromUser(user), [user]);
+  const centerRef = useRef(centerName);
+  centerRef.current = centerName;
 
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
     root.innerHTML = HTML_BODY;
+    const authCenter = (centerRef.current || "").trim();
+    centerStore.value = authCenter;
+    const centerInput = root.querySelector("#regCenter");
+    if (centerInput) {
+      centerInput.value = authCenter || "— लॉग इन केंद्र नहीं मिला —";
+      centerInput.title = authCenter
+        ? "लॉग इन केंद्र: " + authCenter
+        : "लॉग इन केंद्र नहीं मिला";
+    }
+
+    const syncAppNav = () => {
+      const appNav = document.querySelector(
+        ".app-container > nav, .app-container > .navbar",
+      );
+      if (!appNav) {
+        root.style.setProperty("--app-nav-h", "0px");
+        root.style.setProperty("--app-nav-pad", "0px");
+        return;
+      }
+      const h = Math.round(appNav.getBoundingClientRect().height) || 0;
+      const isFixed = window.getComputedStyle(appNav).position === "fixed";
+      root.style.setProperty("--app-nav-h", h + "px");
+      root.style.setProperty("--app-nav-pad", isFixed ? h + "px" : "0px");
+    };
+    syncAppNav();
+    window.addEventListener("resize", syncAppNav);
+    window.addEventListener("load", syncAppNav);
+    const navSyncTimer = window.setTimeout(syncAppNav, 400);
 
     try {
-      const run = new Function("document", "window", HTML_LOGIC);
-      run(document, window);
+      (function () {
+        "use strict";
+        const num = (v) => {
+          const n = parseFloat(
+            String(v == null ? "" : v).replace(/[^0-9.\-]/g, ""),
+          );
+          return isNaN(n) ? 0 : n;
+        };
+        const fmt0 = (n) =>
+          "₹ " + Math.round(Number(n) || 0).toLocaleString("en-IN");
+        const fmtN = (n) =>
+          (Number(n) || 0).toLocaleString("en-IN", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          });
+        const esc = (s) =>
+          String(s == null ? "" : s).replace(
+            /[&<>"]/g,
+            (c) =>
+              ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c],
+          );
+        const landRowHasValue = (r, i) => {
+          if (i === 0) return true;
+          if (!r) return false;
+          return (
+            num(r.hec) > 0 ||
+            ["name", "father", "khasra", "aadhaar"].some(
+              (k) => String(r[k] == null ? "" : r[k]).trim() !== "",
+            )
+          );
+        };
+
+        // Helper to safely replace innerHTML without crashing on focused elements
+        const safeSetHTML = (id, html) => {
+          const el = document.getElementById(id);
+          if (!el) return;
+          if (document.activeElement && el.contains(document.activeElement)) {
+            try {
+              document.activeElement.blur();
+            } catch (e) {}
+          }
+          el.innerHTML = html;
+        };
+
+        const ONE = [
+          "",
+          "एक",
+          "दो",
+          "तीन",
+          "चार",
+          "पाँच",
+          "छह",
+          "सात",
+          "आठ",
+          "नौ",
+          "दस",
+          "ग्यारह",
+          "बारह",
+          "तेरह",
+          "चौदह",
+          "पन्द्रह",
+          "सोलह",
+          "सत्रह",
+          "अठारह",
+          "उन्नीस",
+          "बीस",
+          "इक्कीस",
+          "बाईस",
+          "तेईस",
+          "चौबीस",
+          "पच्चीस",
+          "छब्बीस",
+          "सत्ताईस",
+          "अट्ठाईस",
+          "उनतीस",
+          "तीस",
+          "इकतीस",
+          "बत्तीस",
+          "तैंतीस",
+          "चौंतीस",
+          "पैंतीस",
+          "छत्तीस",
+          "सैंतीस",
+          "अड़तीस",
+          "उनतालीस",
+          "चालीस",
+          "इकतालीस",
+          "बयालीस",
+          "तैंतालीस",
+          "चवालीस",
+          "पैंतालीस",
+          "छियालीस",
+          "सैंतालीस",
+          "अड़तालीस",
+          "उनचास",
+          "पचास",
+          "इक्यावन",
+          "बावन",
+          "तिरेपन",
+          "चौवन",
+          "पचपन",
+          "छप्पन",
+          "सत्तावन",
+          "अट्ठावन",
+          "उनसठ",
+          "साठ",
+          "इकसठ",
+          "बासठ",
+          "तिरेसठ",
+          "चौंसठ",
+          "पैंसठ",
+          "छियासठ",
+          "सड़सठ",
+          "अड़सठ",
+          "उनहत्तर",
+          "सत्तर",
+          "इकहत्तर",
+          "बहत्तर",
+          "तिहत्तर",
+          "चौहत्तर",
+          "पचहत्तर",
+          "छिहत्तर",
+          "सतहत्तर",
+          "अठहत्तर",
+          "उन्यासी",
+          "अस्सी",
+          "इक्यासी",
+          "बयासी",
+          "तिरासी",
+          "चौरासी",
+          "पचासी",
+          "छियासी",
+          "सत्तासी",
+          "अट्ठासी",
+          "नवासी",
+          "नब्बे",
+          "इक्यानवे",
+          "बानवे",
+          "तिरानवे",
+          "चौरानवे",
+          "पचानवे",
+          "छियानवे",
+          "सत्तानवे",
+          "अट्ठानवे",
+          "निन्यानवे",
+        ];
+        const three = (n) => {
+          const s = Math.floor(n / 100),
+            r = n % 100;
+          let o = s ? ONE[s] + " सौ" : "";
+          if (r) o += (o ? " " : "") + ONE[r];
+          return o;
+        };
+        function words(v) {
+          const n = Math.round(Math.abs(num(v)));
+          if (!n) return "शून्य";
+          const cr = Math.floor(n / 10000000),
+            lk = Math.floor((n % 10000000) / 100000),
+            th = Math.floor((n % 100000) / 1000),
+            hn = n % 1000;
+          const o = [];
+          if (cr) o.push(three(cr) + " करोड़");
+          if (lk) o.push(three(lk) + " लाख");
+          if (th) o.push(three(th) + " हजार");
+          if (hn) o.push(three(hn));
+          return o.join(" ");
+        }
+
+        const LISTS = {
+          material: [
+            "चेनलिंक जाली (10 गेज)",
+            "चेनलिंक जाली (12 गेज)",
+            "कंटीले तार (बार्बड वायर)",
+            "एंगल आयरन 35×35×5 मि०मी०",
+            "एंगल आयरन 35×35×5 मि०मी०",
+            "एंगल आयरन 40×40×5 मि०मी०",
+            "एंगल आयरन 50×50×5 मि०मी०",
+            "लोहे के खम्बे",
+            "नटबोल्ट",
+            "बाइंडिंग वायर",
+            "लोहे का गेट",
+            "पेंट / प्राइमर",
+          ],
+          footing: [
+            "सीमेंट",
+            "रेत",
+            "बजरी",
+            "रेत बजरी",
+            "ईंट",
+            "पत्थर",
+            "सरिया",
+          ],
+          unit: [
+            "मीटर",
+            "नग",
+            "किग्रा",
+            "बोरी",
+            "घन मीटर",
+            "ट्रॉली",
+            "फीट",
+            "क्विंटल",
+          ],
+          work: [
+            "गड्ढा खुदान",
+            "खम्बों की स्थापना",
+            "चेनलिंक जाली लगाना",
+            "कंटीले तार लगाना",
+            "गेट लगाना",
+            "फेंसिंग कार्य",
+            "अन्य श्रमिक कार्य",
+          ],
+          other: [
+            "फोटोग्राफी / जियो टैग फोटोग्राफ",
+            "ढुलाई",
+            "लोडिंग / अनलोडिंग",
+            "मजदूरी",
+            "अन्य व्यय",
+          ],
+        };
+        const DL = {
+          dlMaterial: "material",
+          dlFooting: "footing",
+          dlUnit: "unit",
+          dlWork: "work",
+          dlOther: "other",
+        };
+        const DISTRICT_NAME = "पौड़ी गढ़वाल";
+
+        const blank = () => ({
+          scheme: "fencing",
+          formId: "",
+          lists: JSON.parse(JSON.stringify(LISTS)),
+          norm: { fRate: 80, vRate: 75, fCap: "", vCap: "", fCostHa: 200000 },
+          f: {
+            name: "",
+            father: "",
+            village: "",
+            post: "",
+            block: "",
+            mob: "",
+            aadhar: "",
+            khasra: "",
+            bank: "",
+            branch: "",
+            acct: "",
+            ifsc: "",
+            cat: "सामान्य",
+            farmerCat: "सीमांत",
+            gardenCard: "",
+            plants: "",
+            irrigation: "उपलब्ध",
+            fenceStandardCost: "",
+            dist: DISTRICT_NAME,
+            planType: "जिला योजना",
+            fenceMaterial: "चेनलिंक जाली",
+            gender: "पुरुष",
+            nali: "",
+            area: "",
+            fenceLen: "",
+            poles: "",
+            mbNo: "",
+            verifiedLen: "",
+            allowedLen: "",
+            mbLen: "",
+            mbRate: "",
+            mbAmt: "",
+            date: new Date().toISOString().slice(0, 10),
+            billDate: "",
+            place: "",
+            officer: "",
+            desig: "",
+          },
+          landRows: [
+            {
+              relation: "स्वयं",
+              name: "",
+              father: "",
+              khasra: "",
+              aadhaar: "",
+              hec: "",
+            },
+            {
+              relation: "भाई",
+              name: "",
+              father: "",
+              khasra: "",
+              aadhaar: "",
+              hec: "",
+            },
+            {
+              relation: "पुत्र",
+              name: "",
+              father: "",
+              khasra: "",
+              aadhaar: "",
+              hec: "",
+            },
+            {
+              relation: "पिता",
+              name: "",
+              father: "",
+              khasra: "",
+              aadhaar: "",
+              hec: "",
+            },
+            {
+              relation: "अन्य",
+              name: "",
+              father: "",
+              khasra: "",
+              aadhaar: "",
+              hec: "",
+            },
+          ],
+          material: [{}],
+          footing: [{}],
+          labour: [{}],
+          other: [{}],
+        });
+        let S = blank();
+
+        const COLS = {
+          material: {
+            amt: (r) => num(r.amt),
+            c: [
+              ["item", "किस कार्य / सामग्री का बिल है", 0, 0, "dlMaterial"],
+              ["sup", "आपूर्तिकर्ता / फर्म"],
+              ["bill", "बिल सं०"],
+              ["amt", "बिल राशि (₹)", 0, "n"],
+            ],
+          },
+          footing: {
+            amt: (r) => num(r.amt),
+            c: [
+              ["item", "किस कार्य / सामग्री का बिल है", 0, 0, "dlFooting"],
+              ["sup", "आपूर्तिकर्ता / फर्म"],
+              ["amt", "बिल राशि (₹)", 0, "n"],
+            ],
+          },
+          labour: {
+            amt: (r) => num(r.amt),
+            c: [
+              ["work", "कार्य का विवरण", 0, 0, "dlWork"],
+              ["amt", "भुगतान राशि (₹)", 0, "n"],
+            ],
+          },
+          other: {
+            amt: (r) => num(r.amt),
+            c: [
+              ["item", "विवरण", 0, 0, "dlOther"],
+              ["name", "प्राप्तकर्ता का नाम"],
+              ["vil", "ग्राम"],
+              ["aad", "आधार सं०"],
+              ["amt", "राशि (₹)", 0, "n"],
+            ],
+          },
+        };
+        const sum = (k) => S[k].reduce((a, r) => a + COLS[k].amt(r), 0);
+
+        const SECTIONS = {
+          fencing: [
+            [
+              "material",
+              "अ · सामग्री",
+              "चेनलिंक / कंटीले वायर, एंगल आयरन, नटबोल्ट आदि → देयक पंक्ति 1",
+            ],
+            [
+              "footing",
+              "ब · फुटिंग सामग्री",
+              "सीमेंट, रेत, बजरी → देयक पंक्ति 2",
+            ],
+            ["labour", "स · श्रमिक कार्य", "→ देयक पंक्ति 3"],
+            ["other", "अन्य", "→ देयक पंक्ति 4"],
+          ],
+        };
+
+        function mbValue() {
+          const direct = num(S.f.mbAmt);
+          if (direct > 0) return direct;
+          const l = num(S.f.mbLen),
+            r = num(S.f.mbRate);
+          return l > 0 && r > 0 ? l * r : 0;
+        }
+        function calc() {
+          const isF = S.scheme === "fencing";
+          const parts = isF
+            ? [
+                [
+                  "सामग्री — चेनलिंक / कंटीले वायर, एंगल आयरन, नटबोल्ट आदि",
+                  sum("material"),
+                ],
+                ["फुटिंग सामग्री — सीमेंट, रेत, बजरी", sum("footing")],
+                [
+                  "श्रमिक कार्य — गड्ढा खुदान, खम्बों की स्थापना, चेनलिंक / कंटीले वायर लगाना, गेट लगाना आदि",
+                  sum("labour"),
+                ],
+                ["अन्य", sum("other")],
+              ]
+            : [];
+
+          const bill = parts.reduce((a, p) => a + p[1], 0);
+          const rate = (isF ? num(S.norm.fRate) : num(S.norm.vRate)) / 100;
+          const cap = num(isF ? S.norm.fCap : S.norm.vCap);
+
+          let mb = 0,
+            base = 0,
+            bases = [],
+            hec = 0,
+            allowedLen = 0,
+            verifiedLen = 0,
+            ratio = 1,
+            actualArea = 0,
+            standardCost = 0,
+            shortfall = 0;
+          let totalHec = 0;
+
+          if (isF) {
+            mb = mbValue();
+            const app = applicationData();
+            totalHec = app.totalHec;
+            hec = app.totalHec; // Use totalHec directly to allow calculations even if not strictly in mapping
+            const std = fenceStandard(hec);
+            allowedLen =
+              num(S.f.allowedLen) > 0 ? num(S.f.allowedLen) : std ? std.len : 0; // Allow manual override
+            verifiedLen = num(S.f.verifiedLen);
+            ratio =
+              allowedLen > 0 && verifiedLen > 0 ? verifiedLen / allowedLen : 1;
+            actualArea = hec * ratio;
+            const costHa = num(S.norm.fCostHa) || 200000;
+            standardCost = actualArea > 0 ? Math.round(actualArea * costHa) : 0;
+            shortfall = Math.max(0, allowedLen - verifiedLen);
+
+            if (bill > 0)
+              bases.push({
+                key: "bill",
+                label: "बिल / वाउचर के अनुसार कुल व्यय",
+                val: bill,
+              });
+            if (mb > 0)
+              bases.push({
+                key: "mb",
+                label: "एम०बी० मूल्यांकन धनराशि",
+                val: mb,
+              });
+            if (standardCost > 0)
+              bases.push({
+                key: "standard",
+                label: "मानक लागत (क्षेत्रफल × ₹2,00,000)",
+                val: standardCost,
+              });
+            base =
+              bill > 0 && bases.length
+                ? Math.min(...bases.map((b) => b.val))
+                : 0;
+          } else {
+            mb = mbValue();
+            base = mb > 0 ? Math.min(bill, mb) : bill;
+          }
+
+          let sub = Math.round(base * rate);
+          const capped = cap > 0 && sub > cap;
+          if (capped) sub = cap;
+
+          const eff = bill ? sub / bill : 0;
+          const rows = [];
+          let run = 0;
+          parts.forEach((p, i) => {
+            const s =
+              i < parts.length - 1
+                ? Math.round(p[1] * eff)
+                : Math.max(0, sub - run);
+            run += s;
+            rows.push({ name: p[0], amt: p[1], sub: s, own: p[1] - s });
+          });
+          return {
+            isF,
+            bill,
+            mb,
+            base,
+            bases,
+            rate,
+            sub,
+            own: Math.max(0, bill - sub),
+            cap,
+            capped,
+            over: mb > 0 && bill > 0 && bill > mb,
+            hec,
+            totalHec,
+            allowedLen,
+            verifiedLen,
+            mbLen: num(S.f.mbLen),
+            ratio,
+            actualArea,
+            standardCost,
+            shortfall,
+            rows,
+          };
+        }
+
+        function tableHTML(k) {
+          const cfg = COLS[k];
+          let h =
+            '<table class="expense-table"><thead><tr><th style="width:38px">क्र०</th>';
+          cfg.c.forEach((c) => (h += `<th>${c[1]}</th>`));
+          h += '<th style="width:38px"></th></tr></thead><tbody>';
+          S[k].forEach((r, i) => {
+            h += `<tr><td class="n">${i + 1}</td>`;
+            const tip =
+              r.item || r.work
+                ? ` title="सर्वर: मात्रा ${esc(r.qty || 0)} ${esc(r.unit || "")} × दर ${esc(r.rate || 0)}"`
+                : "";
+            cfg.c.forEach((c) => {
+              if (c[0] === "_amt") {
+                h += `<td class="calc num">${fmtN(cfg.amt(r))}</td>`;
+                return;
+              }
+              h +=
+                `<td><input data-row="${k}" data-i="${i}" data-k="${c[0]}" value="${esc(r[c[0]] || "")}"` +
+                (c[4] ? ` list="${c[4]}"` : "") +
+                (c[3] === "n"
+                  ? ' inputmode="decimal" style="text-align:right"'
+                  : "") +
+                (c[0] === "item" || c[0] === "work" ? tip : "") +
+                `></td>`;
+            });
+            h += `<td><button class="rm" data-del="${k}" data-i="${i}" title="पंक्ति हटाएँ">×</button></td></tr>`;
+          });
+          const ai = cfg.c.findIndex((c) => c[0] === "_amt" || c[0] === "amt");
+          h += `<tr class="tot"><td colspan="${ai + 1}" style="text-align:right">योग</td><td class="calc num" data-tot="${k}">${fmtN(sum(k))}</td>`;
+          for (let j = ai + 1; j <= cfg.c.length; j++) h += "<td></td>";
+          h += "</tr></tbody></table>";
+          h += `<button class="addrow" data-add="${k}">+ पंक्ति जोड़ें</button>`;
+          return h;
+        }
+        function buildLists() {
+          safeSetHTML(
+            "datalists",
+            Object.keys(DL)
+              .map(
+                (i) =>
+                  `<datalist id="${i}">` +
+                  (S.lists[DL[i]] || [])
+                    .map((v) => `<option value="${esc(v)}">`)
+                    .join("") +
+                  "</datalist>",
+              )
+              .join(""),
+          );
+        }
+        function buildStandards() {
+          const body = document.getElementById("standardsBody");
+          const title = document.getElementById("standardsTitle");
+          if (!body) return;
+          if (title) title.textContent = "फेंसिंग राजसहायता के मानक";
+          S.norm.fRate = 80;
+          S.norm.fCostHa = 200000;
+          S.norm.fCap = 0;
+          safeSetHTML(
+            "standardsBody",
+            `<div class="grid">
+            <div><label class="f">फेंसिंग राजसहायता दर (%) — सभी श्रेणियों के लिए समान</label>
+              <select data-norm="fRate" disabled><option value="50">50%</option><option value="80" selected>80%</option></select></div>
+            <div><label class="f">इकाई लागत ₹ प्रति हेक्टेयर</label><input data-norm="fCostHa" value="200000" inputmode="decimal" readonly disabled></div>
+            <div><label class="f">अतिरिक्त अधिकतम सीमा ₹ (वैकल्पिक)</label><input data-norm="fCap" value="0" inputmode="decimal" readonly disabled></div>
+          </div>
+          <p class="lead" style="margin:12px 0 0">विभागीय मानक: इकाई लागत ₹2,00,000 प्रति हेक्टेयर। लागत सदैव क्षेत्रफल (हे०) से बनती है, मीटर से गुणा करके नहीं।
+          सत्यापित लम्बाई अनुमन्य लम्बाई से जितनी कम हो, उसी अनुपात में क्षेत्रफल घटाकर मानक लागत निकाली जाती है।
+          राजसहायता तीन आधारों — <b>बिल / वाउचर का योग</b>, <b>एम०बी० मूल्यांकन</b>, तथा <b>मानक लागत</b> — इनमें से जो <b>न्यूनतम</b> हो, उस पर देय होगी।</p>`,
+          );
+          body
+            .querySelectorAll("[data-norm]")
+            .forEach((el) => (el.value = S.norm[el.dataset.norm]));
+        }
+        function buildWork() {
+          buildStandards();
+          const workLead = document.getElementById("workLead");
+          if (!document.getElementById("workBody")) return;
+          if (workLead)
+            workLead.textContent =
+              S.scheme === "fencing"
+                ? "बिल एवं वाउचर के अनुसार पूरा व्यय भरें। हर अनुभाग का योग अपने आप देयक की सम्बन्धित पंक्ति में चला जाएगा।"
+                : "इकाई निर्माण पर हुआ पूरा व्यय भरें। हर पंक्ति में पहले कार्य / विवरण चुनें, फिर उसी के सामने बिल राशि डालें।";
+          safeSetHTML(
+            "workBody",
+            SECTIONS[S.scheme]
+              .map(
+                ([k, t, n]) =>
+                  `<div class="card"><div class="cap"><i></i>${t}<small>${n}</small></div><div class="pad">${tableHTML(k)}${saveBar(k, SAVE_LABELS[k] || t)}</div></div>`,
+              )
+              .join(""),
+          );
+          buildLists();
+          const mapCard = document.getElementById("fenceMapCard");
+          if (mapCard)
+            mapCard.style.display = S.scheme === "fencing" ? "" : "none";
+          document
+            .querySelectorAll("[data-norm]")
+            .forEach((el) => (el.value = S.norm[el.dataset.norm]));
+        }
+
+        const FENCE_AREA_MAP = [
+          { nali: 10, hec: 0.2, len: 240, poles: 81 },
+          { nali: 15, hec: 0.3, len: 260, poles: 87 },
+          { nali: 20, hec: 0.4, len: 280, poles: 94 },
+          { nali: 25, hec: 0.5, len: 300, poles: 101 },
+          { nali: 30, hec: 0.6, len: 320, poles: 107 },
+          { nali: 35, hec: 0.7, len: 340, poles: 114 },
+          { nali: 40, hec: 0.8, len: 360, poles: 121 },
+          { nali: 45, hec: 0.9, len: 380, poles: 127 },
+          { nali: 50, hec: 1.0, len: 400, poles: 134 },
+          { nali: 60, hec: 1.2, len: 440, poles: 147 },
+          { nali: 70, hec: 1.4, len: 480, poles: 161 },
+          { nali: 80, hec: 1.6, len: 520, poles: 174 },
+          { nali: 90, hec: 1.8, len: 560, poles: 187 },
+          { nali: 100, hec: 2.0, len: 600, poles: 201 },
+        ];
+        let FENCE_MAP_DATA = null;
+        async function loadFenceStandards() {
+          try {
+            const res = await apiFetch(API_FENCING_LAND_DETAILS);
+            const data = await readJsonResponse(res);
+            const arr = Array.isArray(data)
+              ? data
+              : data && data.data
+                ? data.data
+                : [];
+            if (arr.length) {
+              FENCE_MAP_DATA = arr
+                .map((r) => ({
+                  nali: num(r.land_nali),
+                  hec: num(r.area_hectare),
+                  len: num(r.permissible_length),
+                  poles: num(r.pillars),
+                }))
+                .filter((x) => x.hec > 0)
+                .sort((a, b) => a.hec - b.hec);
+            }
+          } catch (e) {
+            /* fallback to hardcoded map */
+          }
+        }
+        function getFenceMap() {
+          return FENCE_MAP_DATA && FENCE_MAP_DATA.length
+            ? FENCE_MAP_DATA
+            : FENCE_AREA_MAP;
+        }
+        function fenceStandard(hec) {
+          const map = getFenceMap();
+          const h = Math.round(num(hec) * 100) / 100;
+          if (h <= 0) return null;
+          return map.find((x) => Math.abs(x.hec - h) < 0.0001) || null;
+        }
+        function isAllowedFenceHec(hec) {
+          const map = getFenceMap();
+          const h = Math.round(num(hec) * 100) / 100;
+          return map.some((x) => Math.abs(x - h) < 0.0001);
+        }
+        function fenceMaterialName() {
+          return S.f.fenceMaterial === "कंटीले तार"
+            ? "कंटीले तार (बार्बड वायर)"
+            : "चेनलिंक जाली";
+        }
+        const LANG_FIELDS = ["planType", "gender", "fenceMaterial"];
+        function rebuildDocs() {
+          if (
+            cur === "application" &&
+            document.getElementById("applicationOut")
+          )
+            buildApplication();
+          if (cur === "bill" && document.getElementById("billOut")) buildBill();
+        }
+        function isFemale() {
+          return (S.f.gender || "पुरुष") === "महिला";
+        }
+        function G(m, f) {
+          return isFemale() ? f : m;
+        }
+        function applicantWord() {
+          return G("आवेदक", "आवेदिका");
+        }
+        function beneficiaryWord() {
+          return G("लाभार्थी", "लाभार्थिनी");
+        }
+        function fenceHeading() {
+          return S.f.fenceMaterial === "कंटीले तार"
+            ? "कंटीले तार"
+            : "चेनलिंक फेंसिंग";
+        }
+        function fenceKaamPhrase() {
+          return S.f.fenceMaterial === "कंटीले तार"
+            ? "कंटीले तार की घेरबाड़"
+            : "चेनलिंक फेंसिंग की घेरबाड़";
+        }
+        function applicationData() {
+          const totalHec =
+            Math.round(
+              (S.landRows || []).reduce((a, r) => a + num(r.hec), 0) * 100,
+            ) / 100;
+          const exact = fenceStandard(totalHec);
+          const totalNali = exact ? exact.nali : 0;
+          const plants = num(S.f.plants);
+          const area = totalHec;
+          const allowedArea = isAllowedFenceHec(totalHec);
+          const eligible =
+            !!S.f.gardenCard &&
+            plants > 0 &&
+            allowedArea &&
+            plants / area >= 100;
+          return {
+            totalHec,
+            totalNali,
+            exact,
+            plants,
+            area,
+            allowedArea,
+            eligible,
+            minPlants: area * 100,
+          };
+        }
+
+        function affidavitHasCoSharers(d) {
+          const rows = S.landRows || [];
+          const ownHec = num(rows[0]?.hec);
+          const totalHec = num(d?.totalHec);
+          return totalHec > ownHec + 0.000001;
+        }
+        function affHec(v) {
+          const n = num(v);
+          return n > 0 ? n.toFixed(2) : "…………";
+        }
+        function affNali(v) {
+          const n = num(v);
+          return n > 0 ? n.toFixed(2).replace(/\.00$/, "") : "…………";
+        }
+        function buildFencingAffidavit(d) {
+          const f = S.f || {};
+          const joint = affidavitHasCoSharers(d);
+          const total = affHec(d.totalHec);
+          const totalNali = affNali(d.totalNali);
+          const first = (S.landRows && S.landRows[0]) || {};
+          const coRows = (S.landRows || [])
+            .slice(1)
+            .filter((r) => num(r.hec) > 0 || String(r.name || "").trim());
+          const allRows = (S.landRows || []).filter(
+            (r, i) => i === 0 || num(r.hec) > 0 || String(r.name || "").trim(),
+          );
+
+          const plan = esc(f.planType || "जिला योजना");
+          const name = esc(f.name || "…………");
+          const father = esc(f.father || "…………");
+          const village = esc(f.village || "…………");
+          const post = esc(f.post || "…………");
+          const dist = esc(f.dist || "…………");
+          const card = esc(f.gardenCard || "…………");
+          const khasra = esc(first.khasra || "…………");
+          const block = esc(f.block || "…………");
+          const panchayat = esc(f.panchayat || f.village || "…………");
+          const bank = esc(f.bank || "…………");
+          const branch = esc(f.branch || "…………");
+          const acct = esc(f.acct || "…………");
+          const mob = esc(f.mob || "…………");
+          const date = esc(f.date || "…………");
+          const aadhar = esc(f.aadhar || "…………");
+
+          const rate = num(S.norm.fRate) || 80;
+          const costHa = num(S.norm.fCostHa) || 200000;
+          const stdCost = Math.round(num(d.totalHec) * costHa);
+          const estSub = Math.round((stdCost * rate) / 100);
+
+          if (!joint) {
+            return `<div class="affidavit-doc aff-page-break">
+              <div class="aff-head">
+                <div class="aff-kicker">उद्यान विभाग, कोटद्वार · वित्तीय वर्ष 2026-27</div>
+                <div class="aff-title">लाभार्थी स्व-घोषणा एवं शपथ-पत्र</div>
+                <div class="aff-sub">(${fenceKaamPhrase()} हेतु आवेदन एवं स्व-घोषणा — स्वयं की पूर्ण भूमि की स्थिति में) · स्टाम्प : ₹10/-</div>
+                <div class="aff-line"></div>
+              </div>
+              <div class="aff-intro">मैं श्री <b>${name}</b>, ${G("पुत्र", "पुत्री")} श्री <b>${father}</b>, निवासी ग्राम <b>${village}</b>, ग्राम पंचायत <b>${village}</b>, विकासखण्ड <b>${block}</b>, उद्यान सचल दल केन्द्र कोटद्वार, जनपद <b>${dist}</b>, उत्तराखण्ड, सत्यनिष्ठा से शपथपूर्वक निम्नलिखित घोषणा ${G("करता", "करती")} हूँ कि —</div>
+              <div class="aff-item">1. यह कि जिस संपूर्ण भूमि पर मेरे द्वारा घेराबड़ का कार्य कराया जाना प्रस्तावित है, वह भूमि हमारे संयुक्त परिवार के वैधानिक स्वामित्व एवं वास्तविक कब्जे में है तथा वह भौगोलिक रूप से एक ही चक (एक स्थान पर संरेखित) के रूप में स्थित है। जिला योजना के अंतर्गत चेनलिंक फेंसिंग घेराबड़ की स्थापना हेतु मेरे द्वारा कुल ${total} हे० भूमि प्रस्तावित की गई है। उक्त क्षेत्रफल का विवरण निम्नानुसार है  — ग्राम <b>${village}</b>, खसरा / खतौनी सं० <b>${khasra}</b>, कुल क्षेत्रफल <b>${total} हे० (${totalNali} नाली)</b>, भूमि का स्वामित्व : स्वयं। उक्त संपूर्ण भूमि मेरी स्वयं की है तथा ${plan} अन्तर्गत ${fenceKaamPhrase()} की स्थापना हेतु प्रस्तावित क्षेत्रफल इसी भूमि से संबंधित है।</div>
+              <div class="aff-item">2. यह कि आवेदन स्वीकृत होने की दशा में, उक्त भूमि पर ${fenceKaamPhrase()} का कार्य उद्यान विभाग द्वारा निर्धारित मानकों एवं स्वीकृत तकनीकी विवरण के अनुसार ही कराया जाएगा। कार्य पूर्ण होने के पश्चात मैं मौके पर सामग्री एवं कार्य का निरीक्षण कर विभाग को सूचित ${G("करूँगा", "करूँगी")}।</div>
+              <div class="aff-item">3. यह कि आवेदन के समय विभागीय मानक दर के अनुसार उक्त क्षेत्रफल हेतु ${fenceKaamPhrase()} की अनुमानित लागत <b>${fmt0(stdCost)}/-</b> आँकी गई है। चूँकि कार्य अभी प्रारम्भ नहीं हुआ है, अतः वास्तविक व्यय की जानकारी मुझे नहीं है — कार्य पूर्ण होने के पश्चात प्रस्तुत बिल / वाउचर के आधार पर अंतिम राजसहायता की गणना मान्य लागत या वास्तविक व्यय, इन दोनों में से जो भी कम हो, उसके अनुसार की जाएगी।</div>
+              <div class="aff-item">4. उक्त अनुमानित लागत पर योजना में निर्धारित दर (<b>${rate}%</b>) के अनुसार अनुमानित राजसहायता <b>${fmt0(estSub)}/-</b> होगी, जिसका भुगतान कार्य पूर्ण होने एवं देयक सत्यापित होने के पश्चात नियमानुसार डी.बी.टी. (DBT) के माध्यम से मेरे बैंक खाते (<b>${bank}, ${branch}</b>, खाता सं० <b>${acct}</b>) में किया जाएगा।</div>
+              <div class="aff-item">5. यह कि योजनान्तर्गत निर्धारित राजसहायता की शर्तों से मैं पूर्णतः सहमत हूँ। यदि वास्तविक ${fenceKaamPhrase()} कार्य स्वीकृत मानकों या स्वीकृत क्षेत्रफल से अधिक होता है, तो अतिरिक्त लंबाई / क्षेत्रफल पर होने वाला समस्त व्यय मैं स्वयं वहन ${G("करूँगा", "करूँगी")} और विभाग से किसी अतिरिक्त राजसहायता की मांग नहीं ${G("करूँगा", "करूँगी")}। इसके अतिरिक्त, वास्तविक व्यय मान्य विभागीय लागत से अधिक होने की दशा में भी उस अतिरिक्त राशि पर कोई राजसहायता देय नहीं होगी तथा मान्य लागत एवं देय राजसहायता के मध्य की शेष राशि सहित यह संपूर्ण भार मेरे द्वारा स्वयं वहन किया जाएगा।</div>
+              <div class="aff-item">6. यह कि इससे पूर्व मेरे द्वारा उक्त प्रस्तावित भूमि की घेराबाड़ हेतु किसी भी अन्य सरकारी विभाग अथवा किसी अन्य योजना / परियोजना से कोई सरकारी अनुदान, सहायता या वित्तीय लाभ प्राप्त नहीं किया गया है।</div>
+              <div class="aff-item">7. यह कि उक्त भूमि पूर्णतः विवाद रहित है तथा इस पर किसी भी प्रकार का कोई मालिकाना हक का वाद-विवाद, न्यायालयीन प्रकरण, बैंक बंधक अथवा अन्य कोई कानूनी अड़चन विद्यमान नहीं है।</div>
+              <div class="aff-item">8. यह कि कार्य स्थल पर मेरे द्वारा विभागीय निर्देशानुसार हरी पृष्ठभूमि पर सफेद पेंट से अंकित एक लोहे का सूचना बोर्ड लगाया जाएगा, जिसमें योजना का नाम "${plan} अन्तर्गत उद्यान की ${fenceHeading()} घेराबाड़ योजना वर्ष 2026-2027", कृषक का विवरण, कुल क्षेत्रफल, कुल लागत एवं राजसहायता का स्पष्ट उल्लेख होगा।</div>
+              <div class="aff-item">9. यह कि स्थापित की जाने वाली घेराबाड़ के भविष्य में रख-रखाव, मरम्मत एवं देख-रेख की संपूर्ण जिम्मेदारी मेरी स्वयं की होगी। प्राकृतिक आपदा या किसी अन्य कारण से घेराबाड़ को होने वाले नुकसान के लिए उद्यान विभाग उत्तरदायी नहीं होगा।</div>
+              <div class="aff-item">10. यह कि मैं विभाग द्वारा किए जाने वाले स्थलीय निरीक्षण, भौतिक सत्यापन एवं आवश्यक जाँच में सहयोग ${G("करूँगा", "करूँगी")}। यदि मेरे द्वारा प्रस्तुत भूमि अभिलेख, बैंक खाते की जानकारी या घेराबाड़ से संबंधित कोई भी तथ्य भविष्य में असत्य या भ्रामक पाया जाता है, तो विभाग को मेरे विरुद्ध कानूनी कार्यवाही करने तथा दी गई राजसहायता की राशि को भू-राजस्व की भांति वसूल करने का पूर्ण अधिकार होगा, जो मुझे सहर्ष स्वीकार होगा।</div>
+              <div class="aff-decl">मैंने यह शपथ-पत्र बिना किसी दबाव, भय अथवा प्रलोभन के अपनी स्वतंत्र इच्छा से दिया है तथा इसमें वर्णित सभी तथ्य मेरे ज्ञान एवं विश्वास के अनुसार सत्य एवं सही हैं।</div>
+              <div class="aff-sign-plain">
+                <div><b>${G("शपथकर्ता", "शपथकर्त्री")} / कृषक</b></div>
+                <div>नाम : ${name}</div>
+                <div>हस्ताक्षर : ________________</div>
+                <div>मो० : ${mob}</div>
+                <div>स्थान : ${esc(centerLine())}</div>
+                <div>दिनांक : ${date}</div>
+              </div>
+            </div>`;
+          }
+
+          function landDesc(r, i) {
+            const rel = String(r.relation || "").trim();
+            const nm = String(r.name || "").trim();
+            if (i === 0) {
+              if (rel && nm) return `${rel} ${nm} की भूमि`;
+              if (rel) return `${rel} की भूमि`;
+              return "आवेदक की स्वयं की भूमि";
+            }
+            if (rel && nm) return `सह-खातेदार ${rel} ${nm} की भूमि`;
+            if (nm) return `सह-खातेदार ${nm} की भूमि`;
+            if (rel) return `सह-खातेदार ${rel} की भूमि`;
+            return "सह-खातेदार की भूमि";
+          }
+
+          const landTableRows = allRows
+            .map(
+              (r, i) => `
+            <tr>
+              <td style="text-align:center">${i + 1}</td>
+              <td>${landDesc(r, i)}</td>
+              <td>${esc(r.khasra || "…………")}</td>
+              <td style="text-align:right">${affHec(r.hec)} हे०</td>
+              <td style="text-align:center">${i === 0 ? "स्वयं" : "सह-खातेदार"}</td>
+            </tr>
+          `,
+            )
+            .join("");
+
+          const consentLetters = coRows
+            .map((r, i) => {
+              const rName = esc(r.name || "…………");
+              const rFather = esc(r.father || "…………");
+              const rVillage = esc(r.village || f.village || "…………");
+              const rKhasra = esc(r.khasra || "…………");
+              const rHec = affHec(r.hec);
+              const rRel = esc(r.relation || "…………");
+              const rAadhaar = esc(r.aadhaar || "…………");
+              return `
+            <div class="aff-consent-block">
+              <div class="aff-head">
+                <div class="aff-title">सह-खातेदार का सहमति एवं अनापत्ति पत्र</div>
+                <div class="aff-line"></div>
+              </div>
+              <div class="aff-intro">मैं श्री <b>${rName}</b>, पुत्र श्री <b>${rFather}</b>, निवासी ग्राम <b>${rVillage}</b>, यह घोषित करता हूँ कि मेरी भूमि का विवरण निम्नानुसार है — खाता सं० <b>${rKhasra}</b>, कुल क्षेत्रफल <b>${rHec} हे०</b>।</div>
+              <div class="aff-item">मैं यह सहमति प्रदान करता हूँ कि मेरी उक्त भूमि में से ${rHec} हे० क्षेत्रफल को श्री ${name}, जो मेरे ${rRel} हैं, द्वारा जिला योजना के अंतर्गत प्रस्तुत चेनलिंक फेंसिंग घेराबड़ आवेदन में सम्मिलित किया जाए।</div>
+              <div class="aff-item">मुझे उक्त भूमि पर घेराबड़ की स्थापना किए जाने पर कोई आपत्ति नहीं है।</div>
+              <div class="aff-item">मैं यह भी सहमति देता हूँ कि योजना के अंतर्गत अनुमन्य राजसहायता की राशि आवेदक के नाम से डी.बी.टी. (DBT) के माध्यम से उसके बैंक खाते में प्राप्त की जाए।</div>
+              <div class="aff-item">मैंने यह सहमति अपनी स्वतंत्र इच्छा से दी है और भविष्य में उक्त स्थापना एवं योजना के लाभ के संबंध में अनावश्यक आपत्ति नहीं करूँगा।</div>
+              <div class="aff-sign-plain">
+                <div><b>सह-खातेदार का विवरण</b></div>
+                <div>नाम : ${rName}</div>
+                <div>हस्ताक्षर : ________________</div>
+                <div>आवेदक से संबंध : ${rRel}</div>
+                <div>आधार कार्ड संख्या : ${rAadhaar}</div>
+                <div>दिनांक : ________________</div>
+              </div>
+            </div>`;
+            })
+            .join("");
+
+          return `<div class="affidavit-doc aff-page-break">
+            <div class="aff-head">
+              <div class="aff-kicker">उद्यान विभाग, कोटद्वार · वित्तीय वर्ष 2026-27</div>
+              <div class="aff-title">शपथ-पत्र</div>
+              <div class="aff-sub">(${fenceKaamPhrase()} हेतु आवेदन एवं स्व-घोषणा — संयुक्त भूमि / सह-खातेदार) · स्टाम्प : ₹10/-</div>
+              <div class="aff-line"></div>
+            </div>
+            <div class="aff-intro">मैं श्री <b>${name}</b>, ${G("पुत्र", "पुत्री")} श्री <b>${father}</b>, निवासी ग्राम <b>${village}</b>, ग्राम पंचायत <b>${village}</b>, विकासखण्ड <b>${block}</b>, उद्यान सचल दल केन्द्र कोटद्वार, जनपद <b>${dist}</b>, उत्तराखण्ड, सत्यनिष्ठा से शपथपूर्वक निम्नलिखित घोषणा ${G("करता", "करती")} हूँ कि —</div>
+
+            <div class="aff-item">1. यह कि जिस संपूर्ण भूमि पर मेरे द्वारा घेराबड़ का कार्य कराया जाना प्रस्तावित है, वह भूमि हमारे संयुक्त परिवार के वैधानिक स्वामित्व एवं वास्तविक कब्जे में है तथा वह भौगोलिक रूप से एक ही चक (एक स्थान पर संरेखित) के रूप में स्थित है। जिला योजना के अंतर्गत चेनलिंक फेंसिंग घेराबड़ की स्थापना हेतु मेरे द्वारा कुल ${total} हे० भूमि प्रस्तावित की गई है। उक्त क्षेत्रफल का विवरण निम्नानुसार है —</div>
+            <table class="aff-land">
+              <thead><tr><th style="width:42px">क्र.</th><th>भूमि का विवरण</th><th>खसरा सं०</th><th>क्षेत्रफल</th><th>स्थिति</th></tr></thead>
+              <tbody>
+                ${landTableRows}
+                <tr><td colspan="3" style="text-align:right"><b>कुल प्रस्तावित क्षेत्रफल</b></td><td style="text-align:right"><b>${total} हे०</b></td><td></td></tr>
+              </tbody>
+            </table>
+
+            <div class="aff-item">2. यह कि सह-खातेदारों की भूमि को जिला योजना के अंतर्गत मेरे आवेदन में सम्मिलित करने हेतु संबंधित सह-खातेदारों द्वारा स्वेच्छा से लिखित सहमति एवं अनापत्ति प्रदान की गई है (संलग्न)। सह-खातेदारों को प्रस्तावित घेराबड़ स्थापना, भूमि के उपयोग तथा योजना के अंतर्गत देय राजसहायता के संबंध में पूर्ण जानकारी है।</div>
+
+            <div class="aff-item">3. यह कि सह-खातेदारों की सहमति से सम्मिलित भूमि सहित कुल प्रस्तावित क्षेत्रफल में स्थापित की जाने वाली घेराबड़ का उपयोग संबंधित उद्यान / फसल सुरक्षा के लिए किया जाएगा तथा उसके संचालन, सुरक्षा एवं रख-रखाव की जिम्मादारी मेरे द्वारा निभाई जाएगी।</div>
+
+            <div class="aff-item">4. यह कि आवेदन स्वीकृत होने की दशा में, जिला योजना के अंतर्गत प्रस्तावित चेनलिंक फेंसिंग घेराबड़ की स्थापना का कार्य उद्यान विभाग द्वारा निर्धारित मानकों एवं स्वीकृत तकनीकी विवरण के अनुसार ही कराया जाएगा। कार्य पूर्ण होने के पश्चात मैं मौके पर उपलब्ध सामग्री एवं कार्य का निरीक्षण कर विभाग को सूचित ${G("करूँगा", "करूँगी")}।</div>
+
+            <div class="aff-item">5. यह कि आवेदन के समय विभागीय मानक दर के अनुसार उक्त कुल क्षेत्रफल हेतु चेनलिंक फेंसिंग घेराबड़ की अनुमानित लागत <b>${fmt0(stdCost)}/-</b> आँकी गई है। चूँकि कार्य अभी प्रारम्भ नहीं हुआ है, अतः वास्तविक व्यय की जानकारी अभी ज्ञात नहीं है — कार्य पूर्ण होने के पश्चात राजसहायता की गणना नियमानुसार मान्य लागत / वास्तविक व्यय में से जो कम हो, उसके अनुसार की जाएगी।</div>
+
+            <div class="aff-item">6. उक्त अनुमानित लागत पर लागू दर (<b>${rate}%</b>) के अनुसार अनुमानित राजसहायता <b>${fmt0(estSub)}/-</b> होगी, जिसका भुगतान कार्य पूर्ण होने एवं देयक सत्यापित होने के पश्चात नियमानुसार डी.बी.टी. (DBT) के माध्यम से आवेदक के बैंक खाते (<b>${bank}, ${branch}</b>, खाता सं० <b>${acct}</b>) में किया जाएगा।</div>
+
+            <div class="aff-item">7. यह कि योजनान्तर्गत निर्धारित राजसहायता की शर्तों से मैं पूर्णतः सहमत हूँ। यदि वास्तविक घेराबड़ कार्य स्वीकृत मानकों या स्वीकृत क्षेत्रफल से अधिक होता है, तो अतिरिक्त लंबाई / क्षेत्रफल पर होने वाला समस्त व्यय मैं स्वयं वहन ${G("करूँगा", "करूँगी")} और विभाग से किसी अतिरिक्त राजसहायता की मांग नहीं ${G("करूँगा", "करूँगी")}। इसके अतिरिक्त, वास्तविक व्यय मान्य विभागीय लागत से अधिक होने की दशा में भी उस अतिरिक्त राशि पर कोई राजसहायता देय नहीं होगी तथा मान्य लागत एवं देय राजसहायता के मध्य की शेष राशि सहित यह संपूर्ण भार मेरे द्वारा वहन किया जाएगा।</div>
+
+            <div class="aff-item">8. यह कि सह-खातेदारों को इस बात की जानकारी एवं सहमति है कि उनकी भूमि को उक्त जिला योजना आवेदन में सम्मिलित किया गया है और योजना के अंतर्गत स्वीकृत राजसहायता आवेदक के बैंक खाते में डी.बी.टी. के माध्यम से प्राप्त होगी। इस संबंध में सह-खातेदारों की लिखित सहमति इस शपथ-पत्र के साथ संलग्न है।</div>
+
+            <div class="aff-item">9. यह कि प्रस्तावित कुल भूमि पर घेराबड़ हेतु इससे पूर्व किसी अन्य सरकारी योजना / विभाग से कोई सरकारी अनुदान, सहायता या वित्तीय लाभ प्राप्त नहीं किया गया है।</div>
+
+            <div class="aff-item">10. यह कि कार्य स्थल पर मेरे द्वारा विभागीय निर्देशानुसार हरी पृष्ठभूमि पर सफेद पेंट से अंकित एक लोहे का सूचना बोर्ड लगाया जाएगा, जिसमें योजना का नाम "${plan} अन्तर्गत उद्यान की ${fenceHeading()} घेराबाड़ योजना वर्ष 2026-2027", कृषक का विवरण, कुल क्षेत्रफल, कुल लागत एवं राजसहायता का स्पष्ट उल्लेख होगा।</div>
+
+            <div class="aff-item">11. यह कि मेरे द्वारा प्रस्तुत भूमि अभिलेख, खाता / खसरा विवरण, क्षेत्रफल, सह-खातेदारों की सहमति तथा योजना से संबंधित अन्य जानकारी मेरे ज्ञान एवं विश्वास के अनुसार सही है।</div>
+
+            <div class="aff-item">12. यह कि उक्त भूमि पूर्णतः विवाद रहित है तथा इस पर किसी भी प्रकार का कोई मालिकाना हक का वाद-विवाद, न्यायालयीन प्रकरण, पारिवारिक आपसी बंटवारे का विवाद, बैंक बंधक अथवा अन्य कोई कानूनी अड़चन विद्यमान नहीं है।</div>
+
+            <div class="aff-item">13. मैं विभाग द्वारा किए जाने वाले स्थलीय निरीक्षण, भौतिक सत्यापन एवं अभिलेखीय जाँच में आवश्यक सहयोग ${G("करूँगा", "करूँगी")}। यदि मेरे द्वारा प्रस्तुत भूमि, सह-खातेदारों की सहमति, पूर्व अनुदान अथवा वित्तीय विवरण के संबंध में भविष्य में कोई जानकारी असत्य, भ्रामक अथवा योजना के नियमों के विपरीत पाई जाती है, तो प्राप्त राजसहायता की वसूली तथा नियमानुसार विभागीय / कानूनी कार्यवाही के लिए मैं स्वयं उत्तरदायी रहूँगा।</div>
+
+            <div class="aff-decl">मैंने यह शपथ-पत्र बिना किसी दबाव, भय अथवा प्रलोभन के अपनी स्वतंत्र इच्छा से दिया है और इसमें वर्णित जानकारी मेरे ज्ञान एवं विश्वास के अनुसार सत्य एवं सही है।</div>
+
+            <div class="aff-sign-plain">
+              <div><b>आवेदक</b></div>
+              <div>नाम : ${name}</div>
+              <div>हस्ताक्षर : ________________</div>
+              <div>मो० : ${mob}</div>
+              <div>स्थान : ${esc(centerLine())}</div>
+              <div>दिनांक : ${date}</div>
+            </div>
+          </div>
+          ${
+            coRows.length
+              ? `
+          <div class="affidavit-doc aff-page-break">
+            ${consentLetters}
+            <div class="aff-sign-plain">
+              <div><b>शपथकर्ता / आवेदक</b></div>
+              <div>नाम : ${name}</div>
+              <div>हस्ताक्षर : ________________</div>
+              <div>मो० : ${mob}</div>
+              <div>स्थान : ${esc(centerLine())}</div>
+              <div>दिनांक : ${date}</div>
+            </div>
+          </div>`
+              : ""
+          }`;
+        }
+
+        function buildFencingApplication() {
+          const d = applicationData();
+          const rate = num(S.norm.fRate);
+          const standard =
+            d.allowedArea && d.totalHec > 0
+              ? Math.round(d.totalHec * (num(S.norm.fCostHa) || 200000))
+              : 0;
+          const subsidy =
+            standard > 0 ? Math.round((standard * rate) / 100) : 0;
+          const status = !S.f.gardenCard
+            ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — उद्यान कार्ड संख्या अनिवार्य है।</div>`
+            : d.plants <= 0
+              ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — उद्यान में उपलब्ध फल पौधों की संख्या भरना अनिवार्य है।</div>`
+              : d.area <= 0
+                ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> पहले भूमि का क्षेत्रफल चुनें।</div>`
+                : !d.allowedArea
+                  ? `<div class="appbad"><b>आवेदन स्थिति:</b> लागू नहीं — सभी भूमि प्रविष्टियों को जोड़ने पर प्रस्तावित भूमि का कुल क्षेत्रफल निर्धारित मैपिंग की किसी भी स्वीकृत श्रेणी से मेल नहीं खाता। केवल 0.20, 0.30, 0.40, 0.50, 0.60, 0.70, 0.80, 0.90, 1.00, 1.20, 1.40, 1.60, 1.80 या 2.00 हे० का कुल क्षेत्रफल मान्य होगा।</div>`
+                  : d.plants / d.area < 100
+                    ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — न्यूनतम 100 पौधे प्रति हे० आवश्यक हैं। वर्तमान ${fmtN(d.plants / d.area)} पौधे/हे०।</div>`
+                    : `<div class="appok"><b>फेंसिंग पात्रता:</b> पात्र — न्यूनतम 100 पौधे प्रति हे० की शर्त पूरी है।</div>`;
+
+          safeSetHTML(
+            "applicationOut",
+            `<div class="appdoc">
+            <div style="text-align:center;font-size:11.5px;color:#65746B;margin:2px 0 4px">उद्यान विभाग · वित्तीय वर्ष 2026-27</div>
+            <h3 style="text-decoration:underline">${esc(S.f.planType || "जिला योजना")} अन्तर्गत ${fenceHeading()} हेतु</h3>
+            <h4 style="color:var(--ink);font-size:16px;font-weight:600">कृषक आवेदन पत्र</h4>
+            <div class="appnote">
+              <b>योजना:</b>
+              <select data-f="planType" style="margin-left:8px;padding:3px">
+                <option>जिला योजना</option><option>राज्य सेक्टर योजना</option>
+              </select>
+              <span style="margin-left:18px"><b>लिंग:</b></span>
+              <select data-f="gender" style="margin-left:8px;padding:3px">
+                <option value="पुरुष">पुरुष</option><option value="महिला">महिला</option>
+              </select>
+              <span style="margin-left:18px"><b>फेंसिंग सामग्री:</b></span>
+              <select data-f="fenceMaterial" style="margin-left:8px;padding:3px">
+                <option value="चेनलिंक जाली">चेनलिंक जाली</option>
+                <option value="कंटीले तार">कंटीले तार (बार्बड वायर)</option>
+              </select>
+              <span style="margin-left:18px"><b>फेंसिंग राजसहायता दर:</b></span>
+              <select data-f="fRate" id="appRate" style="margin-left:8px;padding:3px">
+                <option value="50">50%</option><option value="80">80%</option>
+              </select>
+              <span style="margin-left:12px">सभी श्रेणियों के लिए समान चयनित दर लागू होगी। चुनी गयी सामग्री (चेनलिंक/कंटीले तार) के अनुसार भाषा पूरे आवेदन एवं अनुदान (देयक) प्रपत्र में स्वतः बदल जाती है।</span>
+            </div>
+            <h5>उद्यान कार्ड विवरण — फेंसिंग आवेदन के लिए अनिवार्य</h5>
+            <table class="landtable infoTable"><tbody>
+              <tr><td class="flabel">उद्यान कार्ड संख्या</td><td><input data-f="gardenCard" value="${esc(S.f.gardenCard || "")}"></td></tr>
+              <tr><td class="flabel">उद्यान में उपलब्ध फल पौधों की संख्या</td><td><input data-f="plants" inputmode="numeric" value="${esc(S.f.plants || "")}"></td></tr>
+            </tbody></table>
+            <div id="fenceEligibility">${status}</div>
+            <h5>1. ${applicantWord()} का विवरण</h5>
+            <table class="landtable infoTable"><tbody>
+              <tr><td class="flabel">${beneficiaryWord()} / ${applicantWord()} का नाम</td><td><input data-f="name" value="${esc(S.f.name || "")}"></td></tr>
+              <tr><td class="flabel">पिता / पति का नाम</td><td><input data-f="father" value="${esc(S.f.father || "")}"></td></tr>
+              <tr><td class="flabel">ग्राम</td><td><input data-f="village" value="${esc(S.f.village || "")}"></td></tr>
+              <tr><td class="flabel">पोस्ट ऑफिस</td><td><input data-f="post" value="${esc(S.f.post || "")}"></td></tr>
+              <tr><td class="flabel">विकास खण्ड</td><td><input data-f="block" value="${esc(S.f.block || "")}"></td></tr>
+              <tr><td class="flabel">जनपद</td><td><input data-f="dist" value="${esc(S.f.dist || "पौड़ी गढ़वाल")}" readonly></td></tr>
+              <tr><td class="flabel">मोबाइल नंबर</td><td><input data-f="mob" value="${esc(S.f.mob || "")}"></td></tr>
+              <tr><td class="flabel">आधार संख्या</td><td><input data-f="aadhar" value="${esc(S.f.aadhar || "")}"></td></tr>
+              <tr><td class="flabel">वर्ग</td><td><select data-f="cat"><option>सामान्य</option><option>OBC</option><option>SC</option><option>ST</option><option>महिला</option></select></td></tr>
+              <tr><td class="flabel">कृषक श्रेणी</td><td><select data-f="farmerCat"><option>सीमांत</option><option>लघु</option><option>अन्य</option></select></td></tr>
+              <tr><td class="flabel">सिंचाई की सुविधा</td><td><select data-f="irrigation"><option>उपलब्ध</option><option>उपलब्ध नहीं</option></select></td></tr>
+            </tbody></table>
+            ${saveBar("personal", "आवेदक एवं योजना विवरण")}
+            <h5>2. बैंक विवरण (DBT हेतु)</h5>
+            <table class="landtable infoTable"><tbody>
+              <tr><td class="flabel">बैंक का नाम</td><td><input data-f="bank" value="${esc(S.f.bank || "")}"></td></tr>
+              <tr><td class="flabel">शाखा</td><td><input data-f="branch" value="${esc(S.f.branch || "")}"></td></tr>
+              <tr><td class="flabel">खाता संख्या</td><td><input data-f="acct" value="${esc(S.f.acct || "")}"></td></tr>
+              <tr><td class="flabel">IFSC कोड</td><td><input data-f="ifsc" value="${esc(S.f.ifsc || "")}"></td></tr>
+            </tbody></table>
+            ${saveBar("bank", "बैंक विवरण")}
+            <h5>3. भूमि एवं कार्य का विवरण</h5>
+            <table class="landtable">
+              <thead><tr>
+                <th style="width:38px">क्र.</th>
+                <th style="width:85px">भूमि किसकी / विवरण</th>
+                <th style="width:120px">नाम (खतौनी के अनुसार)</th>
+                <th style="width:105px">पिता का नाम</th>
+                <th style="width:100px">ग्राम</th>
+                <th style="width:100px">खसरा / खतौनी सं०</th>
+                <th style="width:95px">आधार संख्या</th>
+                <th style="width:90px">${applicantWord()} की प्रस्तावित भूमि — फेंसिंग हेतु</th>
+                <th class="noprint" style="width:46px">क्रिया</th>
+              </tr></thead>
+              <tbody>${(() => {
+                const rows = S.landRows || [];
+                let printedNo = 0;
+                return rows
+                  .map((r, i) => {
+                    const has = landRowHasValue(r, i);
+                    if (has) printedNo++;
+                    return `
+                <tr class="land-row${has ? "" : " land-row-empty"}">
+                  <td class="land-sno" style="text-align:center"><span class="land-sno-screen">${i + 1}</span><span class="land-sno-print">${has ? printedNo : ""}</span></td>
+                  <td><input data-land="${i}" data-k="relation" value="${esc(r.relation || "")}" placeholder="भूमि किसकी / विवरण"></td>
+                  <td>${
+                    i === 0
+                      ? `<input class="landSelfName" value="${esc(S.f.name || "")}" placeholder="नाम खतौनी अनुसार" readonly tabindex="-1">`
+                      : `<input data-land="${i}" data-k="name" value="${esc(r.name || "")}" placeholder="नाम खतौनी अनुसार">`
+                  }</td>
+                  <td>${
+                    i === 0
+                      ? `<input class="landSelfFather" value="${esc(S.f.father || "")}" placeholder="पिता का नाम" readonly tabindex="-1">`
+                      : `<input data-land="${i}" data-k="father" value="${esc(r.father || "")}" placeholder="पिता का नाम">`
+                  }</td>
+                  <td><input class="landVil" value="${esc(S.f.village || "")}" placeholder="ग्राम" readonly tabindex="-1"></td>
+                  <td><input data-land="${i}" data-k="khasra" value="${esc(r.khasra || "")}" placeholder="खसरा / खतौनी सं०"></td>
+                  <td>${
+                    i === 0
+                      ? `<input class="landSelfAadhaar" value="${esc(S.f.aadhar || "")}" placeholder="आधार संख्या" readonly tabindex="-1">`
+                      : `<input data-land="${i}" data-k="aadhaar" value="${esc(r.aadhaar || "")}" inputmode="numeric" maxlength="12" placeholder="आधार संख्या">`
+                  }</td>
+                  <td><input data-land="${i}" data-k="hec" inputmode="decimal" value="${esc(r.hec || "")}" placeholder="हे०"></td>
+                  <td class="noprint" style="text-align:center">${i === 0 ? "" : `<button type="button" class="land-remove" data-land-del="${i}" title="यह पंक्ति हटाएँ">×</button>`}</td>
+                </tr>`;
+                  })
+                  .join("");
+              })()}
+                <tr class="tot">
+                  <td colspan="7" style="text-align:right">प्रस्तावित भूमि का क्षेत्रफल (कुल हे०) — वास्तविक आवेदन क्षेत्रफल</td>
+      <td class="calc" style="text-align: justify;">
+  ${fmtN(d.totalHec)}
+</td>
+                  <td class="noprint"></td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="noprint land-row-actions">
+              <button type="button" class="addrow" id="addLandRow">+ पंक्ति जोड़ें</button>
+            </div>
+           
+            <p class="appnote noprint" style="margin-top:6px">
+              फेंसिंग के लिए ऊपर दर्ज सभी भूमि पंक्तियों का क्षेत्रफल जोड़कर कुल क्षेत्रफल निकलेगा। यही कुल क्षेत्रफल ऊपर दी गयी मैपिंग तालिका के किसी एक निर्धारित अंक से हूबहू मिलना आवश्यक है। कुल क्षेत्रफल किसी भी निर्धारित अंक से मेल नहीं होने पर किसान का फेंसिंग आवेदन लागू नहीं माना जाएगा।
+            </p>
+            <p class="appnote noprint" style="margin-top:6px">«नाम», «पिता का नाम» (पहली पंक्ति — स्वयं) एवं «ग्राम» कॉलम ऊपर <b>1. ${applicantWord()} का विवरण</b> में भरे गये विवरण से स्वतः भरते हैं — यहाँ अलग से टाइप करने की आवश्यकता नहीं। «खसरा / खतौनी सं०» एवं «आधार संख्या» प्रत्येक सह-खातेदार की पंक्ति में अलग-अलग भरें — पहली पंक्ति (स्वयं) का आधार संख्या आवेदन विवरण से स्वतः आएगा।</p>
+            ${saveBar("farmers", "भूमि / सह-खातेदार विवरण")}
+            <h5>4. सारांश — क्षेत्रफल, फेंसिंग एवं राजसहायता</h5>
+            <table>
+              <thead><tr>
+                <th>भूमि (नाली)</th><th>क्षेत्रफल (हे०)</th><th>अनुमन्य लम्बाई (मी०</th><th>खम्बे</th>
+                <th>लागत (₹)</th><th>राजसहायता (<span id="sumRateLblTh">${rate}</span>%)</th>
+              </tr></thead>
+              <tbody>
+                <tr>
+                  <td style="text-align:center" id="sumNali">${d.exact ? fmtN(d.totalNali).replace(/\.00$/, "") : "—"}</td>
+                  <td style="text-align:center" id="sumHec">${d.allowedArea ? d.totalHec.toFixed(2) : "—"}</td>
+                  <td style="text-align:center" id="sumLen">${d.exact ? d.exact.len : "—"}</td>
+                  <td style="text-align:center" id="sumPoles">${d.exact ? d.exact.poles : "—"}</td>
+                  <td style="text-align:right" id="sumCost">${fmt0(standard)}</td>
+                  <td style="text-align:right" id="sumSubSelected">${fmt0(subsidy)}</td>
+                </tr>
+                <tr class="tot">
+                  <td colspan="5" style="text-align:right">देय राजसहायता (चयनित दर <span id="sumRateLbl">${rate}</span>%)</td>
+                  <td class="calc" id="sumSubsidy">${fmt0(subsidy)}</td>
+                </tr>
+              </tbody>
+            </table>
+            ${saveBar("expenses", "क्षेत्रफल एवं मानक सारांश")}
+            <h5>5. घोषणा</h5>
+            <div class="appnote">
+              • उपर्युक्त सभी विवरण मेरी जानकारी में पूर्णतः सत्य हैं।<br>
+              • मुझे पूर्व में किसी अन्य सरकारी योजना से इस कार्य हेतु अनुदान प्राप्त नहीं हुआ है।<br>
+              • कार्य / इकाई का निर्माण, रखरखाव एवं संचालन विभागीय दिशा-निर्देशों के अनुसार मेरी जिम्मादारी होगी।<br>
+              • संलग्न बिल / वाउचर एवं दस्तावेज सही हैं।
+            </div>
+            <h5>6. आवश्यक संलग्नक</h5>
+            <div class="appgrid">
+              <div>☐ उद्यान कार्ड</div><div>☐ खतौनी / भूमि स्वामित्व प्रमाण पत्र</div>
+              <div>☐ आधार कार्ड एवं बैंक पासबुक की छायाप्रति</div><div>☐ अन्य आवश्यक दस्तावेज</div>
+            </div>
+            <h5>7. कृषक का प्रमाणपत्र</h5>
+            <div class="appnote" style="line-height:1.9;text-align:justify">
+              प्रमाणित किया जाता है कि मेरे द्वारा ${S.f.planType || "जिला योजना"} अन्तर्गत ${fenceHeading()} / घेरबाड़ कार्य हेतु उपर्युक्तानुसार आवेदन प्रस्तुत किया जा रहा है तथा आवेदन में अंकित समस्त विवरण सत्य एवं सही हैं।
+              अतः नियमानुसार देय राजसहायता की धनराशि <b id="appCertSub">${fmt0(subsidy)}</b> (<span id="appCertWords">${subsidy > 0 ? words(subsidy) + " रुपये मात्र" : "…………"}</span>) स्वीकृत करने की कृपा कीजिएगा।
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:20px">
+              <div style="flex:0 0 auto">
+                <div style="display:flex;gap:6px;align-items:baseline"><b>दिनांक :</b><input class="ln sm" type="date" data-f="date"></div>
+                <div style="display:flex;gap:6px;align-items:baseline;margin-top:8px"><b>स्थान :</b><input class="ln sm" value="${esc(centerLine())}" readonly></div>
+              </div>
+              <div style="text-align:center;min-width:240px;border-top:1px solid var(--ink);padding-top:5px">
+                हस्ताक्षर ${G("कृषक", "कृषिका")}<br><span class="auto" id="appCertName">${esc(S.f.name || "")}</span></div>
+            </div>
+            ${saveBar("date", "दिनांक एवं स्थान")}
+            <h5>8. प्रभारी की आख्या</h5>
+            <div class="appnote" style="line-height:1.9;text-align:justify">
+              प्रमाणित किया जाता है कि ${G("कृषक", "कृषिका")} द्वारा प्रस्तुत आवेदन, उद्यान कार्ड, भूमि अभिलेख (खतौनी) एवं अन्य संबंधित अभिलेखों का परीक्षण कर लिया गया है तथा प्रस्तावित भूमि का स्थलीय निरीक्षण किया गया है। आवेदन में अंकित विवरण एवं प्रस्तुत अभिलेख सही पाए गए हैं।
+              प्रस्तावित भूमि का कुल क्षेत्रफल <b id="offArea">…………</b> हे० (<b id="offNali">…………</b> नाली) पाया गया, जिस पर विभागीय मानक के अनुसार अनुमन्य ${fenceHeading()} की लम्बाई <b id="offLen">…………</b> मी० तथा अनुमन्य खम्बे <b id="offPoles">…………</b> नग हैं। उद्यान में उपलब्ध फलदार पौधों की संख्या <b id="offPlants">…………</b> होने के कारण न्यूनतम 100 पौधे प्रति हे० की शर्त <b id="offEligible">…………</b>।
+              मानक लागत <b id="offCost">…………</b> के सापेक्ष चयनित दर <b id="offRate">…………</b>% के अनुसार देय राजसहायता की अनुमानित धनराशि <b id="offSub">…………</b> होगी।
+              अतः ${G("कृषक", "कृषिका")} का आवेदन <b>उद्यान विशेषज्ञ, कोटद्वार महोदय की सेवा में ${S.f.planType || "जिला योजना"} अन्तर्गत ${fenceHeading()} / घेरबाड़ कार्य हेतु वर्क ऑर्डर जारी करने के लिए संस्तुति सहित अग्रसारित</b> है।
+            </div>
+            <div style="margin-top:18px;line-height:2">
+              <b>प्रभारी, उद्यान सचल दल केन्द्र :</b> <span class="auto" id="appOfficerCenter">${esc(centerLine())}</span>
+            </div>
+          </div>
+          ${buildFencingAffidavit(d)}`,
+          );
+          document
+            .querySelectorAll("#applicationOut [data-f]")
+            .forEach((el) => {
+              if (el.dataset.f === "fRate") el.value = S.norm.fRate;
+              else if (S.f[el.dataset.f] !== undefined)
+                el.value = S.f[el.dataset.f];
+            });
+          const rr = document.getElementById("appRate");
+          if (rr) rr.value = S.norm.fRate;
+          updateApplicationDerived();
+        }
+
+        function updateApplicationDerived() {
+          if (
+            cur !== "application" ||
+            !document.getElementById("applicationOut")
+          )
+            return;
+          const d = applicationData();
+          const rate = num(S.norm.fRate);
+          const standard =
+            d.totalHec > 0
+              ? Math.round(d.totalHec * (num(S.norm.fCostHa) || 200000))
+              : 0;
+          const subsidy =
+            standard > 0 ? Math.round((standard * rate) / 100) : 0;
+          const set = (id, v) => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = v;
+          };
+          document
+            .querySelectorAll("#applicationOut .landVil")
+            .forEach((el) => {
+              el.value = S.f.village || "";
+            });
+          document
+            .querySelectorAll("#applicationOut .landSelfName")
+            .forEach((el) => {
+              el.value = S.f.name || "";
+            });
+          document
+            .querySelectorAll("#applicationOut .landSelfFather")
+            .forEach((el) => {
+              el.value = S.f.father || "";
+            });
+          const ownAad = document.querySelector(
+            "#applicationOut .landSelfAadhaar",
+          );
+          if (ownAad) ownAad.value = S.f.aadhar || "";
+          syncSelfRowFields();
+
+          const h3 = document.querySelector("#applicationOut h3");
+          if (h3)
+            h3.textContent =
+              (S.f.planType || "जिला योजना") +
+              " अन्तर्गत " +
+              fenceHeading() +
+              " हेतु";
+          const totalCell = document.querySelector(
+            "#applicationOut .landtable .tot .calc",
+          );
+          if (totalCell) totalCell.textContent = fmtN(d.totalHec);
+          set(
+            "sumNali",
+            d.totalNali ? fmtN(d.totalNali).replace(/\.00$/, "") : "—",
+          );
+          set("sumHec", d.totalHec > 0 ? d.totalHec.toFixed(2) : "—");
+          set("sumLen", d.exact ? d.exact.len : "—");
+          set("sumPoles", d.exact ? d.exact.poles : "—");
+          set("sumCost", fmt0(standard));
+          set("sumSubSelected", fmt0(subsidy));
+          set("sumRateLblTh", rate);
+          set("sumRateLbl", rate);
+          set("sumSubsidy", fmt0(subsidy));
+          set("appCertSub", fmt0(subsidy));
+          set(
+            "appCertWords",
+            subsidy > 0 ? words(subsidy) + " रुपये मात्र" : "…………",
+          );
+          set("appCertName", S.f.name || "");
+          const okPlants =
+            d.area > 0 && d.plants > 0 && d.plants / d.area >= 100;
+          set("offArea", d.totalHec > 0 ? d.totalHec.toFixed(2) : "…………");
+          set(
+            "offNali",
+            d.totalNali ? fmtN(d.totalNali).replace(/\.00$/, "") : "…………",
+          );
+          set("offLen", d.exact ? d.exact.len : "…………");
+          set("offPoles", d.exact ? d.exact.poles : "…………");
+          set(
+            "offPlants",
+            d.plants > 0 ? fmtN(d.plants).replace(/\.00$/, "") : "…………",
+          );
+          set("offEligible", okPlants ? "पूर्ण होती है" : "पूर्ण नहीं होती है");
+          set("offCost", fmt0(standard));
+          set("offRate", rate);
+          set("offSub", fmt0(subsidy));
+          const status = !S.f.gardenCard
+            ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — उद्यान कार्ड संख्या अनिवार्य है।</div>`
+            : d.plants <= 0
+              ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — उद्यान में उपलब्ध फल पौधों की संख्या भरना अनिवार्य है।</div>`
+              : d.area <= 0
+                ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> पहले भूमि का क्षेत्रफल भरें।</div>`
+                : d.plants / d.area < 100
+                  ? `<div class="appbad"><b>फेंसिंग पात्रता:</b> अयोग्य — न्यूनतम 100 पौधे प्रति हे० आवश्यक हैं। वर्तमान ${fmtN(d.plants / d.area)} पौधे/हे०।</div>`
+                  : `<div class="appok"><b>फेंसिंग पात्रता:</b> पात्र — न्यूनतम 100 पौधे प्रति हे० की शर्त पूरी है।</div>`;
+          const old = document.getElementById("fenceEligibility");
+          if (old) old.innerHTML = status;
+          setFenceMappingPrintRow();
+        }
+
+        function buildApplication() {
+          const appSection = document.querySelector('[data-v="application"]');
+          if (!appSection) return;
+          const headEl = appSection.querySelector(".head");
+          if (headEl) headEl.textContent = "फेंसिंग आवेदन पत्र";
+          const leadEl = appSection.querySelector(".lead");
+          if (leadEl)
+            leadEl.textContent =
+              fenceHeading() +
+              " / घेरबाड़ के लिए आवेदन पत्र — केवल चयनित योजना की जानकारी।";
+          buildFencingApplication();
+        }
+
+        const L = (lab, k, cls = "") =>
+          `<div class="r"><b>${lab}</b><input class="ln ${cls}" data-f="${k}" value="${esc(S.f[k] || "")}"></div>`;
+        const LR = (lab, k) =>
+          `<div class="r"><b>${lab}</b><span class="auto">${esc(S.f[k] || "…………")}</span></div>`;
+        function buildBill() {
+          const isF = true,
+            c = calc();
+          const schemeName = S.f.planType || "—";
+          const title = `${fenceHeading()} / घेरबाड़ — राजसहायता देयक`;
+          const mbUnit = "मी०";
+          const napName = "लम्बाई";
+          const kaam = fenceKaamPhrase();
+          const planLabel = S.f.planType || "जिला योजना";
+
+          let tbl = `<table><thead><tr><th style="width:44px">क्र०सं०</th><th>कार्य का विवरण</th>
+            <th style="width:116px">देयक की कुल धनराशि</th><th style="width:138px">भुगतान की जाने वाली राजसहायता धनराशि</th>
+            <th style="width:128px">कृषक द्वारा वहन की गयी धनराशि</th></tr></thead><tbody>`;
+          c.rows.forEach((r, i) => {
+            tbl += `<tr><td style="text-align:center">${i + 1}</td><td>${esc(r.name)}</td>
+              <td class="calc num" id="r${i}a"></td><td class="calc num" id="r${i}s"></td>
+              <td class="calc num" id="r${i}o"></td></tr>`;
+          });
+          tbl += `<tr class="tot"><td colspan="2" style="text-align:right">योग</td>
+            <td class="calc num" id="tA"></td><td class="calc num" id="tS"></td><td class="calc num" id="tO"></td></tr></tbody></table>`;
+
+          safeSetHTML(
+            "billOut",
+            `<div class="doc bill-doc">
+            <div class="bill-header">
+              <div class="bill-kicker">उद्यान विभाग · राजसहायता प्रपत्र</div>
+              <h3 class="bill-title">${title}</h3>
+              <div class="bill-rule"></div>
+              <div class="bill-meta">
+                <div><span>योजना :</span><b>${schemeName}</b></div>
+                <div><span>कार्यालय :</span><b>उद्यान विशेषज्ञ, कोटद्वार (गढ़वाल)</b></div>
+                <div><span>वित्तीय वर्ष :</span><b>2026-27</b></div>
+              </div>
+            </div>
+            <div class="serial-layout">
+              <div class="serial-section">
+                <div class="serial-title">1. कृषक का विवरण</div>
+                <div class="kv">
+                  ${LR("नाम कृषक:", "name")}${LR("पिता / पति का नाम:", "father")}
+                  ${LR("ग्राम:", "village")}${LR("पोस्ट ऑफिस:", "post")}
+                  ${LR("विकास खण्ड:", "block")}${LR("जनपद:", "dist")}
+                  ${LR("आधार संख्या:", "aadhar")}${LR("मोबाइल:", "mob")}
+                  <div class="r"><b>खसरा / खतौनी सं० (स्वयं):</b><span class="auto">${esc((S.landRows && S.landRows[0] && S.landRows[0].khasra) || "…………")}</span></div>
+                  <div class="r"><b>वर्ग:</b><span class="auto">${esc(S.f.cat || "…………")}</span>
+                    <b>· लागू राजसहायता दर:</b><span class="auto" id="oRate"></span></div>
+                </div>
+              </div>
+              <div class="serial-section">
+                <div class="serial-title">2. बैंक विवरण</div>
+                <div class="kv">
+                  ${LR("बैंक का नाम:", "bank")}${LR("शाखा:", "branch")}
+                  ${LR("बैंक खाता संख्या:", "acct")}${LR("IFSC कोड:", "ifsc")}
+                </div>
+              </div>
+              ${
+                isF
+                  ? `
+              <div class="serial-section">
+                <div class="serial-title">3. फेंसिंग एवं भूमि का विवरण</div>
+                <div class="kv">
+                  <div class="r"><b>फेंसिंग सामग्री:</b><span class="auto">${esc(fenceMaterialName())}</span></div>
+                  <div class="r"><b>${applicantWord()} की प्रस्तावित भूमि — फेंसिंग हेतु:</b><span class="auto" id="oArea">…………</span></div>
+                  <div class="r"><b>अनुमन्य फेंसिंग लम्बाई:</b><span class="auto" id="oFenceLen">…………</span> मी०</div>
+                  <div class="r"><b>अनुमन्य खम्बे:</b><span class="auto" id="oPoles">…………</span> नग</div>
+                </div>
+              </div>
+              <div class="serial-section">
+                <div class="serial-title">4. एम०बी० (मापपुस्तिका) के अनुसार मूल्यांकन — कनिष्ठ अभियन्ता द्वारा तैयार</div>
+                <div class="kv">
+                  <div class="r"><b>मापी गयी वास्तविक लम्बाई:<span class="required-star" aria-hidden="true">*</span></b><input class="ln rt sm required-field" data-f="mbLen" type="number" min="0.01" step="any" inputmode="decimal" required aria-required="true" title="मापी गयी वास्तविक लम्बाई भरना अनिवार्य है" value="${esc(S.f.mbLen || "")}"><b> मी०</b></div>
+                  <div class="r"><b>अथवा सीधे एम०बी० धनराशि:<span class="required-star" aria-hidden="true">*</span></b><input class="ln rt sm required-field" data-f="mbAmt" type="number" min="0.01" step="any" inputmode="decimal" required aria-required="true" title="एम०बी० धनराशि भरना अनिवार्य है" value="${esc(S.f.mbAmt || "")}"><b> ₹</b><span style="font-size:12px;color:#4A5A50" id="oMbSrc"></span></div>
+                  <div class="r"><b>एम०बी० मूल्यांकन धनराशि:</b><span class="auto" id="oMb"></span></div>
+                </div>
+              </div>
+              <div class="serial-section">
+                <div class="serial-title">5. प्रभारी द्वारा स्थलीय सत्यापन</div>
+                <div class="kv">
+                  <div class="r"><b>क्षेत्रफलानुसार अनुमन्य लम्बाई:</b><span class="auto calc-hint" id="oAllowedLen">…………</span></div>
+                  <div class="r"><b>स्थलीय सत्यापित वास्तविक लम्बाई:<span class="required-star" aria-hidden="true">*</span></b><input class="ln rt sm required-field" data-f="verifiedLen" type="number" min="0.01" step="any" inputmode="decimal" required aria-required="true" title="स्थलीय सत्यापित वास्तविक लम्बाई भरना अनिवार्य है" value="${esc(S.f.verifiedLen || "")}"><b> मी०</b></div>
+                  <div class="r"><b>कार्य में कमी:</b><span class="auto" id="oShort"></span> मी०</div>
+                  <div class="r"><b>वास्तविक क्षेत्रफल (कमी समायोजित):</b><span class="auto" id="oActualArea"></span> हे०</div>
+                  <div class="r"><b id="oStdLabel">मानक लागत: वास्तविक क्षेत्रफल (— हे०) × ₹2,00,000 प्रति हे०:</b><span class="auto" id="oStdCost"></span></div>
+                </div>
+              </div>
+            `
+                  : ``
+              }
+            </div>
+            <div class="bill-table-heading">
+              <div class="bill-table-title">कृषक द्वारा प्रस्तुत कार्य एवं व्यय का विवरण</div>
+              <div class="bill-table-subtitle">प्रस्तुत बिल / वाउचर के आधार पर — एम०बी० एवं स्थलीय सत्यापन से मिलान हेतु</div>
+            </div>
+            ${tbl}
+            <div id="oFlag"></div>
+            <div class="xbox">
+              <div class="xh">राजसहायता की गणना — तीनों में से न्यूनतम</div>
+              <table><tbody>
+                <tr><td>बिल / वाउचर के अनुसार कुल व्यय</td><td class="v" id="xBill"></td></tr>
+                <tr><td>एम०बी० मूल्यांकन धनराशि</td><td class="v" id="xMb"></td></tr>
+                ${isF ? `<tr><td id="xStdLabel">मानक लागत: वास्तविक क्षेत्रफल (— हे०) × ₹2,00,000 प्रति हे०</td><td class="v" id="xStdCost"></td></tr>` : ``}
+                <tr><td>राजसहायता हेतु स्वीकार्य आधार — उपरोक्त में से न्यूनतम</td><td class="v" id="xBase"></td></tr>
+                <tr><td>लागू राजसहायता दर</td><td class="v" id="xRate"></td></tr>
+                <tr class="hi"><td><b>देय राजसहायता धनराशि</b></td><td class="v" id="xSub"></td></tr>
+                ${
+                  isF
+                    ? `<tr><td>कृषक अंश (आधार × शेष दर — मानक अनुसार)</td><td class="v" id="xFarmerShare"></td></tr>
+                <tr><td>मानक की अधिकतम अनुदान सीमा (मानक लागत × दर)</td><td class="v" id="xMaxSub"></td></tr>
+                <tr><td>मानक से कम हुई लागत (कमी के कारण)</td><td class="v" id="xReduction"></td></tr>`
+                    : ``
+                }
+                <tr><td>कृषक द्वारा वहन की गयी वास्तविक धनराशि (बिल − राजसहायता)</td><td class="v" id="xOwn"></td></tr>
+              </tbody></table>
+            </div>
+            <div class="note-box" id="fencingCalculationNote">
+              <div class="note-title">महत्वपूर्ण नोट — फेंसिंग कार्य की गणना</div>
+              <div>• मानक लागत: वास्तविक क्षेत्रफल (<span id="noteActualArea">—</span> हे०) × ₹2,00,000 प्रति हे० = <span id="noteStdCost">—</span></div>
+              <div style="margin-top:5px">• सत्यापित लम्बाई कम होने पर क्षेत्रफल एवं मानक लागत उसी अनुपात में निर्धारित की गई है।</div>
+              <div style="margin-top:5px">• देय आधार: उपलब्ध आधारों में न्यूनतम राशि — <span id="noteBase">—</span></div>
+              <div style="margin-top:5px">• कृषक अंश: आधार राशि पर लागू शेष दर के अनुसार।</div>
+              <div style="margin-top:5px">• कृषक द्वारा वहन की गयी वास्तविक धनराशि: बिल राशि में से देय राजसहायता घटाकर।</div>
+            </div>
+            <p style="margin:10px 0 0"><b>संलग्न:</b> बिल वाउचर, एम०बी०, जियो टैग कलर फोटोग्राफ आदि।</p>
+            <div class="decl">प्रमाणित किया जाता है कि मेरे द्वारा ${planLabel} अन्तर्गत ${kaam} पर उक्तानुसार धनराशि व्यय की गई है।
+            अतः राजसहायता की धनराशि <span class="blank" id="oSub1"></span> (<span id="oWords1"></span> रुपये मात्र) का भुगतान मुझे करने की कृपा कीजिएगा।</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:22px;gap:20px">
+              <div class="bill-date-place" style="flex:0 0 auto">
+                <div style="display:flex;gap:6px;align-items:baseline"><b>देयक दिनांक:<span class="required-star" aria-hidden="true">*</span></b><input class="ln sm required-field" type="date" data-f="billDate" required aria-required="true" title="देयक दिनांक भरना अनिवार्य है"></div>
+                <div style="display:flex;gap:6px;align-items:baseline;margin-top:8px"><b>स्थान:</b><input class="ln sm" value="${esc(centerLine())}" readonly></div>
+              </div>
+              <div style="text-align:center;min-width:240px;border-top:1px solid var(--ink);padding-top:5px">
+                हस्ताक्षर ${G("कृषक", "कृषिका")}<br><span class="auto" id="oName"></span></div>
+            </div>
+            <div class="decl" style="margin-top:26px">प्रमाणित किया जाता है कि मेरे द्वारा ${planLabel} अन्तर्गत ${kaam} कार्य का स्थलीय निरीक्षण कर लिया गया है। प्रभारी द्वारा सत्यापित वास्तविक ${napName}: <span class="blank" id="oLen"></span> ${mbUnit}। एम०बी० (मापपुस्तिका) के अनुसार मूल्यांकन — कनिष्ठ अभियन्ता द्वारा तैयार; मापी गयी वास्तविक लम्बाई: <span class="blank" id="oMbLen"></span> ${mbUnit}; मूल्यांकन धनराशि: <span class="blank" id="oMb2"></span>। बिल में दर्शायी गयी कुल राशि: <span class="blank" id="oBill2"></span>। बिल, एम०बी० एवं स्थलीय सत्यापन का मिलान करने के उपरान्त लागू आधार पर देय राजसहायता धनराशि <span class="blank" id="oSub2"></span> कृषक को भुगतान हेतु देयक सत्यापित कर संस्तुति सहित अग्रसारित।</div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-top:20px;gap:20px">
+              <div style="font-size:13px;color:#4A5A50;display:flex;gap:6px;align-items:baseline;flex-wrap:wrap"></div>
+              <div style="text-align:center;min-width:240px;border-top:1px solid var(--ink);padding-top:5px;margin-left:auto">
+                हस्ताक्षर प्रभारी<br><span class="auto" id="oOff"></span></div>
+            </div>
+          </div>`,
+          );
+          document.querySelectorAll("#billOut [data-f]").forEach((el) => {
+            if (S.f[el.dataset.f] !== undefined) el.value = S.f[el.dataset.f];
+          });
+          refresh();
+        }
+
+        const set = (id, v) => {
+          const el = document.getElementById(id);
+          if (el) el.innerHTML = v;
+        };
+        function validateDistinctDates(showMessage = true) {
+          const applicationDate = String(S.f.date || "").trim();
+          const billDate = String(S.f.billDate || "").trim();
+          if (applicationDate && billDate && applicationDate === billDate) {
+            if (showMessage)
+              apiMsg(
+                "आवेदन पत्र और देयक प्रपत्र की तारीख समान नहीं हो सकती। देयक दिनांक बदलें।",
+                "bad",
+              );
+            return false;
+          }
+          return true;
+        }
+        function validateDistrict(showMessage = true) {
+          if (String(S.f.dist || "").trim() !== DISTRICT_NAME) {
+            if (showMessage)
+              apiMsg("जनपद केवल 'पौड़ी गढ़वाल' होना चाहिए।", "bad");
+            return false;
+          }
+          return true;
+        }
+        function refresh() {
+          const c = calc();
+          c.rows.forEach((r, i) => {
+            set("r" + i + "a", fmtN(r.amt));
+            set("r" + i + "s", fmtN(r.sub));
+            set("r" + i + "o", fmtN(r.own));
+          });
+          set("tA", fmtN(c.bill));
+          set("tS", fmtN(c.sub));
+          set("tO", fmtN(c.own));
+          set("oRate", (c.rate * 100).toFixed(0) + "%");
+          if (S.scheme === "fencing") {
+            const dispHec = (c.totalHec || 0) > 0 ? c.totalHec : c.hec;
+            const m = fenceStandard(dispHec);
+            set("oArea", dispHec > 0 ? dispHec.toFixed(2) + " हे०" : "…………");
+            set("oFenceLen", m ? fmtN(m.len).replace(/\.00$/, "") : "…………");
+            set("oPoles", m ? fmtN(m.poles).replace(/\.00$/, "") : "…………");
+          }
+          set("oMb", c.mb ? fmt0(c.mb) : "—");
+          set("oMbSrc", num(S.f.mbAmt) > 0 ? "" : "");
+          set("xBill", c.bill ? fmt0(c.bill) : "— (नहीं भरा गया)");
+          set("xMb", c.mb ? fmt0(c.mb) : "— (नहीं भरा गया)");
+          if (c.isF) {
+            set(
+              "oShort",
+              c.shortfall > 0 ? fmtN(c.shortfall).replace(/\.00$/, "") : "0",
+            );
+            set(
+              "oAllowedLen",
+              c.allowedLen
+                ? fmtN(c.allowedLen).replace(/\.00$/, "") + " मी०"
+                : "…………",
+            );
+            set("oStdCost", c.standardCost ? fmt0(c.standardCost) : "—");
+            set(
+              "xStdCost",
+              c.standardCost ? fmt0(c.standardCost) : "— (भूमि हे० भरें)",
+            );
+            const costHa = num(S.norm.fCostHa) || 200000;
+            const fullCost = c.hec > 0 ? Math.round(c.hec * costHa) : 0;
+            set("xFarmerShare", fmt0(Math.round(c.base * (1 - c.rate))));
+            set("xMaxSub", fmt0(c.sub));
+            set("xReduction", fmt0(Math.max(0, fullCost - c.standardCost)));
+          }
+          const noteBase = document.getElementById("noteBase");
+          const noteArea = document.getElementById("noteActualArea");
+          const noteStd = document.getElementById("noteStdCost");
+          if (noteBase) noteBase.textContent = c.base ? fmt0(c.base) : "—";
+          if (noteArea)
+            noteArea.textContent =
+              c.actualArea > 0 ? Number(c.actualArea).toFixed(2) : "—";
+          if (noteStd)
+            noteStd.textContent = c.standardCost ? fmt0(c.standardCost) : "—";
+          set("xBase", fmt0(c.base));
+          set("xRate", (c.rate * 100).toFixed(0) + "%");
+          set("xSub", fmt0(c.sub));
+          set("xOwn", fmt0(c.own));
+          set("oSub1", fmt0(c.sub));
+          set("oSub2", fmt0(c.sub));
+          set("oWords1", words(c.sub));
+          set(
+            "oActualArea",
+            c.actualArea > 0 ? Number(c.actualArea).toFixed(2) : "…………",
+          );
+          const actualAreaTxt =
+            c.actualArea > 0 ? Number(c.actualArea).toFixed(2) : "—";
+          const oStdLabel = document.getElementById("oStdLabel");
+          const xStdLabel = document.getElementById("xStdLabel");
+          if (oStdLabel)
+            oStdLabel.textContent = `मानक लागत: वास्तविक क्षेत्रफल (${actualAreaTxt} हे०) × ₹2,00,000 प्रति हे०:`;
+          if (xStdLabel)
+            xStdLabel.textContent = `मानक लागत: वास्तविक क्षेत्रफल (${actualAreaTxt} हे०) × ₹2,00,000 प्रति हे०`;
+          const autoMbLen = c.mbLen;
+          set("oMb2", c.mb ? fmt0(c.mb) : "…………");
+          set(
+            "oMbLen",
+            autoMbLen ? fmtN(autoMbLen).replace(/\.00$/, "") : "…………",
+          );
+          set("oBill2", c.bill ? fmt0(c.bill) : "…………");
+          set(
+            "oLen",
+            c.isF
+              ? c.verifiedLen
+                ? fmtN(c.verifiedLen).replace(/\.00$/, "")
+                : "…………"
+              : esc(S.f.mbLen) || "…………",
+          );
+          set("oName", esc(S.f.name) || "…………");
+          set(
+            "oOff",
+            (esc(S.f.officer) || "…………") +
+              (S.f.desig ? "<br>" + esc(S.f.desig) : ""),
+          );
+          let flag = "";
+          if (c.isF) {
+            if (!c.bases.length) {
+              flag = `<div class="flag bad">व्यय विवरण, एम०बी०, अथवा भूमि का क्षेत्रफल — इनमें से कम से कम एक भरें।</div>`;
+            } else {
+              const min = c.bases.reduce((a, b) => (b.val < a.val ? b : a));
+              flag = `<div class="flag ok">देय आधार — ${min.label}: ${fmt0(min.val)} (उपलब्ध आधारों में न्यूनतम)</div>`;
+            }
+            if (c.shortfall > 0) {
+              flag += `<div class="flag bad">सत्यापित लम्बाई अनुमन्य ${fmtN(c.allowedLen).replace(/\.00$/, "")} मी० से ${fmtN(c.shortfall).replace(/\.00$/, "")} मी० कम है — उसी अनुपात में क्षेत्रफल घटाकर मानक लागत निकाली गयी है।</div>`;
+            }
+            if (c.mb > 0 && c.bill > 0 && c.bill > c.mb) {
+              flag += `<div class="flag bad">बिल का योग एम०बी० मूल्यांकन से ${fmt0(c.bill - c.mb)} अधिक है — अन्तर कृषक द्वारा स्वयं वहन किया जाएगा।</div>`;
+            }
+          }
+          if (c.capped)
+            flag += `<div class="flag bad">गणना अधिकतम सीमा ${fmt0(c.cap)} से अधिक थी — राजसहायता सीमा तक ही देय।</div>`;
+          set("oFlag", flag);
+          const sBill = document.getElementById("sBill");
+          if (sBill) sBill.textContent = fmt0(c.bill);
+          const sMb = document.getElementById("sMb");
+          if (sMb) sMb.textContent = fmt0(c.mb);
+          const sSub = document.getElementById("sSub");
+          if (sSub) sSub.textContent = fmt0(c.sub);
+          const sOwn = document.getElementById("sOwn");
+          if (sOwn) sOwn.textContent = fmt0(c.own);
+          const sRate = document.getElementById("sRate");
+          if (sRate)
+            sRate.textContent = c.bill ? `(${(c.rate * 100).toFixed(0)}%)` : "";
+          const m = document.getElementById("sMsg");
+          if (m) {
+            m.className = "msg" + (c.over ? " bad" : "");
+            m.textContent = !c.bill
+              ? "व्यय विवरण भरना प्रारम्भ करें"
+              : c.over
+                ? `बिल एम०बी० से ${fmt0(c.bill - c.mb)} अधिक — राजसहायता एम०बी० पर ही देय`
+                : `राजसहायता शब्दों में: ${words(c.sub)} रुपये मात्र`;
+          }
+        }
+        function refreshWorkTotals() {
+          document.querySelectorAll("#workBody table").forEach((tb) => {
+            const t = tb.querySelector("[data-tot]");
+            if (!t) return;
+            const k = t.dataset.tot,
+              cfg = COLS[k];
+            tb.querySelectorAll("tbody tr").forEach((tr, i) => {
+              if (i < S[k].length) {
+                const cell = tr.querySelector("td.calc");
+                if (cell) cell.textContent = fmtN(cfg.amt(S[k][i]));
+              }
+            });
+            t.textContent = fmtN(sum(k));
+          });
+          refresh();
+        }
+
+        /* SERVER API */
+        const apiFetch = async (url, options = {}) => {
+          const method = (options.method || "GET").toUpperCase();
+          return fetch(url, { ...options, method, credentials: "omit" });
+        };
+        const readJsonResponse = async (response) => {
+          const ct = response.headers.get("content-type") || "";
+          const text = await response.text();
+          if (!text) return {};
+          if (!ct.toLowerCase().includes("application/json")) {
+            throw new Error(
+              "सर्वर से अपेक्षित JSON नहीं मिला (" + response.status + ")।",
+            );
+          }
+          try {
+            return JSON.parse(text);
+          } catch (e) {
+            throw new Error("सर्वर का उत्तर पढ़ा नहीं जा सका।");
+          }
+        };
+        let FORM_ID = "";
+        let AUTH_CENTER = "";
+        let REG_ROWS = [];
+        let apiMsgTimer = null;
+        function apiMsg(text, kind) {
+          const el = document.getElementById("apiMsg");
+          if (!el) return;
+          if (!text) {
+            el.hidden = true;
+            el.textContent = "";
+            return;
+          }
+          el.hidden = false;
+          el.className = "api-msg noprint " + (kind || "info");
+          el.textContent = text;
+          if (apiMsgTimer) window.clearTimeout(apiMsgTimer);
+          apiMsgTimer = window.setTimeout(() => {
+            el.hidden = true;
+          }, 6000);
+        }
+        function setFormId(id) {
+          FORM_ID = id || "";
+          S.formId = FORM_ID;
+          const el = document.getElementById("curFormId");
+          if (el) {
+            el.textContent = FORM_ID
+              ? "फॉर्म: " + FORM_ID
+              : "— कोई फॉर्म चयनित नहीं —";
+            el.classList.toggle("active", !!FORM_ID);
+          }
+        }
+        function pickFormId(data) {
+          if (!data) return "";
+          if (typeof data === "string") return data;
+          if (data.form_id) return data.form_id;
+          if (data.personal_details && data.personal_details.form_id)
+            return data.personal_details.form_id;
+          if (Array.isArray(data) && data[0])
+            return (
+              data[0].form_id ||
+              (data[0].personal_details && data[0].personal_details.form_id) ||
+              ""
+            );
+          if (data.id && data.form_id === undefined && data.full_name)
+            return data.id;
+          return "";
+        }
+        function apiCenterName() {
+          const raw = (AUTH_CENTER || "").trim();
+          if (!raw) return "";
+          const parts = raw
+            .split(/[,–—]/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          return parts.length > 1 ? parts[parts.length - 1] : raw;
+        }
+        function centerFilter() {
+          return apiCenterName() || AUTH_CENTER;
+        }
+        const EXTRA = {
+          material: ["sup", "bill"],
+          footing: ["sup"],
+          labour: [],
+          other: ["name", "vil", "aad"],
+        };
+        function expenseTuples(section) {
+          const ex = EXTRA[section] || [];
+          return (S[section] || [])
+            .filter(
+              (r) => String(r.item || r.work || "").trim() || num(r.amt) !== 0,
+            )
+            .map((r) => {
+              const base = [
+                r.item || r.work || "",
+                num(r.qty),
+                r.unit || "",
+                num(r.rate),
+                num(r.amt),
+              ];
+              return base.concat(ex.map((k) => r[k] || ""));
+            });
+        }
+        const isBarbed = () =>
+          /कंटीले|barbed/i.test(String(S.f.fenceMaterial || ""));
+        const rateValue = () => {
+          const r = num(S.norm.fRate);
+          return r >= 60 ? 80 : 50;
+        };
+        const catToApi = (v) =>
+          ({
+            सामान्य: "General",
+            OBC: "OBC",
+            SC: "SC",
+            ST: "ST",
+            महिला: "Female",
+          })[v] ||
+          v ||
+          "";
+        const farmerCatToApi = (v) =>
+          ({ सीमांत: "Marginal", लघु: "Small Farmer", अन्य: "Other" })[v] ||
+          v ||
+          "";
+        function payloadPersonal() {
+          return {
+            form_id: FORM_ID,
+            scheme_name: S.f.planType || "जिला योजना",
+            gender: isFemale() ? "Female" : "Male",
+            fencing_material: isBarbed() ? "Barbed Wire" : "Chain Link",
+            subsidy_rate: String(rateValue()),
+            garden_card: S.f.gardenCard || "",
+            plants_no: num(S.f.plants),
+            full_name: S.f.name || "",
+            father_name: S.f.father || "",
+            village: S.f.village || "",
+            post: S.f.post || "",
+            block: S.f.block || "",
+            dist: S.f.dist || "",
+            mob: S.f.mob || "",
+            aadhar: S.f.aadhar || "",
+            category: catToApi(S.f.cat),
+            farmer_category: farmerCatToApi(S.f.farmerCat),
+          };
+        }
+        function payloadBank() {
+          return {
+            form_id: FORM_ID,
+            bank_name: S.f.bank || "",
+            branch: S.f.branch || "",
+            account: S.f.acct || "",
+            ifsc: S.f.ifsc || "",
+          };
+        }
+        function payloadFarmers() {
+          return {
+            form_id: FORM_ID,
+            farmer_details: (S.landRows || [])
+              .filter((r) => String(r.name || "").trim() || num(r.hec) > 0)
+              .map((r) => {
+                const hec = num(r.hec);
+                return [
+                  r.name || "",
+                  r.father || "",
+                  r.village || S.f.village || "",
+                  r.khasra || "",
+                  r.aadhaar || "",
+                  Math.round(hec * 50 * 100) / 100,
+                  hec,
+                ];
+              }),
+          };
+        }
+        function payloadExpenses() {
+          const c = calc();
+          const std = fenceStandard(c.hec);
+          const costHa = num(S.norm.fCostHa) || 200000;
+          const totalCost = c.hec > 0 ? Math.round(c.hec * costHa) : 0;
+          return {
+            form_id: FORM_ID,
+            land_nali: Math.round(c.hec * 50 * 100) / 100,
+            area_hectare: c.hec,
+            permissible_length_meter: std ? std.len : 0,
+            number_of_poles: std ? std.poles : 0,
+            total_cost: totalCost,
+            subsidy_80_percent: Math.round(totalCost * 0.8),
+            subsidy_50_percent: Math.round(totalCost * 0.5),
+            selected_subsidy_rate: rateValue(),
+            payable_subsidy: c.sub,
+            subsidy_rate: rateValue(),
+            unit_cost_per_hectare: costHa,
+            additional_max_limit: num(S.norm.fCap),
+            measured_actual_length: num(S.f.mbLen),
+            site_verified_actual_length: num(S.f.verifiedLen),
+            permissible_length_override: num(S.f.allowedLen),
+            direct_mb_amount: num(S.f.mbAmt),
+            payable_date: S.f.billDate || null,
+          };
+        }
+        function payloadMB() {
+          return {
+            form_id: FORM_ID,
+            measured_actual_length: num(S.f.mbLen),
+            site_verified_actual_length: num(S.f.verifiedLen),
+            permissible_length_override: num(S.f.allowedLen),
+            direct_mb_amount: num(S.f.mbAmt),
+            payable_date: S.f.billDate || null,
+          };
+        }
+        function payloadSection(section) {
+          const rows = expenseTuples(section);
+          const total = rows.reduce((a, r) => a + num(r[4]), 0);
+          return {
+            form_id: FORM_ID,
+            [section + "_expenses"]: rows,
+            [section + "_total"]: total,
+          };
+        }
+        function payloadDate() {
+          return {
+            form_id: FORM_ID,
+            date: S.f.date || null,
+            place: S.f.place || "",
+          };
+        }
+        function apiErrorText(data, res) {
+          if (!data) return "सहेजना विफल (" + res.status + ")";
+          if (typeof data === "string") return data;
+          const simple = data.detail || data.error || data.message;
+          if (typeof simple === "string" && simple) return simple;
+          try {
+            const txt = JSON.stringify(data);
+            return txt.length > 300 ? txt.slice(0, 300) + "…" : txt;
+          } catch (e) {
+            return "सहेजना विफल (" + res.status + ")";
+          }
+        }
+        async function apiPut(payload, label, key, quiet) {
+          if (!FORM_ID) {
+            const m =
+              "पहले 'उपयोगकर्ता पंजीकरण' टैब से कृषक पंजीकृत करें — फॉर्म आईडी आवश्यक है।";
+            if (!quiet) apiMsg(m, "bad");
+            setSaveState(key, "✗ फॉर्म आईडी नहीं है", "bad");
+            return false;
+          }
+          const btn = document.querySelector(
+            '[data-save="' + (key || "") + '"]',
+          );
+          if (btn && !quiet) btn.disabled = true;
+          try {
+            const res = await apiFetch(API_FENCING, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok) throw new Error(apiErrorText(data, res));
+            if (!quiet)
+              apiMsg(
+                "✓ " +
+                  (label || "विवरण") +
+                  " सफलतापूर्वक सहेजा गया — " +
+                  FORM_ID,
+                "ok",
+              );
+            setSaveState(key, "✓ सहेजा गया", "ok");
+            loadRegistrations();
+            return true;
+          } catch (err) {
+            const msg = err && err.message ? err.message : "अज्ञात त्रुटि";
+            if (!quiet) apiMsg("सहेजना विफल: " + msg, "bad");
+            setSaveState(key, "✗ " + msg, "bad");
+            return false;
+          } finally {
+            if (btn) btn.disabled = false;
+          }
+        }
+        async function apiDelete(formIds) {
+          const ids = (Array.isArray(formIds) ? formIds : [formIds])
+            .map((x) => String(x || "").trim())
+            .filter(Boolean);
+          if (!ids.length) {
+            apiMsg("फॉर्म आईडी नहीं मिली — हटाया नहीं जा सका।", "bad");
+            return false;
+          }
+          try {
+            const res = await apiFetch(API_FENCING, {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ form_ids: ids }),
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok)
+              throw new Error(
+                (data && (data.detail || data.error || data.message)) ||
+                  "हटाना विफल (" + res.status + ")",
+              );
+            const left = Array.isArray(data && data.form_ids)
+              ? data.form_ids.map(String)
+              : null;
+            if (FORM_ID && ids.includes(FORM_ID)) {
+              FORM_ID = "";
+              S.formId = "";
+              S = blank();
+              const el = document.getElementById("curFormId");
+              if (el) el.textContent = "— कोई फॉर्म चयनित नहीं —";
+            }
+            REG_ROWS = left
+              ? REG_ROWS.filter((r) =>
+                  left.includes(
+                    String(
+                      r.form_id || (r.personal_details || {}).form_id || "",
+                    ),
+                  ),
+                )
+              : REG_ROWS.filter(
+                  (r) =>
+                    !ids.includes(
+                      String(
+                        r.form_id || (r.personal_details || {}).form_id || "",
+                      ),
+                    ),
+                );
+            renderRegistrations();
+            apiMsg(
+              ids.length +
+                " फॉर्म हटा दिया गया: " +
+                ids.join(", ") +
+                (left
+                  ? " · शेष: " + (left.length ? left.join(", ") : "कोई नहीं")
+                  : ""),
+              "ok",
+            );
+            loadRegistrations();
+            return true;
+          } catch (err) {
+            apiMsg(
+              "हटाना विफल: " +
+                (err && err.message ? err.message : "अज्ञात त्रुटि"),
+              "bad",
+            );
+            return false;
+          }
+        }
+        function requestDeleteForm(fid, btn) {
+          if (!fid) return;
+          const rec = findRecord(fid);
+          const p = rec ? rec.personal_details || rec : null;
+          const name = p && p.full_name ? p.full_name : "";
+          const msg =
+            "फॉर्म " +
+            fid +
+            (name ? " (" + name + ")" : "") +
+            " सर्वर से स्थायी रूप से हटा देना है?\nयह कार्रवाई वापस नहीं होगी।";
+          if (!window.confirm(msg)) return;
+          if (btn) {
+            btn.disabled = true;
+            btn.textContent = "हट रहा है…";
+          }
+          apiDelete([fid]);
+        }
+        const SAVE_STEPS = [
+          {
+            key: "personal",
+            label: "आवेदक एवं योजना विवरण",
+            build: payloadPersonal,
+          },
+          { key: "bank", label: "बैंक विवरण", build: payloadBank },
+          {
+            key: "farmers",
+            label: "भूमि / सह-खातेदार विवरण",
+            build: payloadFarmers,
+          },
+          {
+            key: "expenses",
+            label: "क्षेत्रफल एवं मानक",
+            build: payloadExpenses,
+          },
+          { key: "mb", label: "मापन एवं एम०बी० विवरण", build: payloadMB },
+          {
+            key: "material",
+            label: "सामग्री व्यय",
+            build: () => payloadSection("material"),
+          },
+          {
+            key: "footing",
+            label: "फुटिंग व्यय",
+            build: () => payloadSection("footing"),
+          },
+          {
+            key: "labour",
+            label: "श्रमिक व्यय",
+            build: () => payloadSection("labour"),
+          },
+          {
+            key: "other",
+            label: "अन्य व्यय",
+            build: () => payloadSection("other"),
+          },
+          { key: "date", label: "दिनांक एवं स्थान", build: payloadDate },
+        ];
+        function saveStep(key) {
+          const step = SAVE_STEPS.find((s) => s.key === key);
+          if (!step) return;
+          if (!validateDistrict()) return;
+          if (
+            (key === "date" || key === "mb" || key === "expenses") &&
+            !validateDistinctDates()
+          )
+            return;
+          setSaveState(key, "सहेजा जा रहा है…", "wait");
+          apiPut(step.build(), step.label, key);
+        }
+        const SAVE_STATES = {};
+        function setSaveState(key, text, kind) {
+          if (!key) return;
+          if (text) SAVE_STATES[key] = { text, kind: kind || "" };
+          else delete SAVE_STATES[key];
+          const st = SAVE_STATES[key];
+          document
+            .querySelectorAll('[data-savestate="' + key + '"]')
+            .forEach((el) => {
+              el.className = "save-state" + (st ? " " + st.kind : "");
+              el.textContent = st ? st.text : "";
+            });
+        }
+        function clearSaveStates() {
+          Object.keys(SAVE_STATES).forEach((k) => {
+            delete SAVE_STATES[k];
+          });
+        }
+        const SAVE_LABELS = {
+          material: "सामग्री व्यय",
+          footing: "फुटिंग व्यय",
+          labour: "श्रमिक व्यय",
+          other: "अन्य व्यय",
+        };
+        function saveBar(key, label) {
+          const st = SAVE_STATES[key];
+          return `<div class="save-bar noprint">
+            <button type="button" class="addrow solid" data-save="${key}">सहेजें — ${label}</button>
+            <span class="save-state${st ? " " + st.kind : ""}" data-savestate="${key}">${st ? st.text : ""}</span>
+            <span class="save-hint">PUT · फॉर्म आईडी <b>${esc(FORM_ID || "चयनित नहीं")}</b></span>
+          </div>`;
+        }
+        function validateRequiredBillFields(showMessage = true) {
+          const requiredFields = [
+            { key: "billDate", label: "देयक दिनांक", type: "date" },
+            { key: "mbLen", label: "मापी गयी वास्तविक लम्बाई", type: "number" },
+            { key: "mbAmt", label: "एम०बी० धनराशि", type: "number" },
+            {
+              key: "verifiedLen",
+              label: "स्थलीय सत्यापित वास्तविक लम्बाई",
+              type: "number",
+            },
+          ];
+          const missing = requiredFields.filter(({ key, type }) => {
+            const value = String(S.f[key] ?? "").trim();
+            if (!value) return true;
+            if (type === "number") {
+              const n = Number(value);
+              return !Number.isFinite(n) || n <= 0;
+            }
+            return false;
+          });
+
+          // Show native validation on the first missing field, even though the bill
+          // is rendered as a document rather than a normal HTML form.
+          if (missing.length) {
+            const first = document.querySelector(
+              `#billOut [data-f="${missing[0].key}"]`,
+            );
+            if (first) {
+              first.setCustomValidity(
+                missing[0].type === "number"
+                  ? "कृपया शून्य से अधिक मान भरें।"
+                  : "कृपया यह दिनांक भरें।",
+              );
+              first.reportValidity();
+              first.addEventListener(
+                "input",
+                () => first.setCustomValidity(""),
+                { once: true },
+              );
+              first.focus();
+            }
+            if (showMessage) {
+              apiMsg(
+                "कृपया सभी अनिवार्य फ़ील्ड भरें: " +
+                  missing.map((field) => field.label).join(", "),
+                "bad",
+              );
+            }
+            return false;
+          }
+          return true;
+        }
+
+        async function saveAllSteps() {
+          if (!FORM_ID) {
+            apiMsg(
+              "पहले 'उपयोगकर्ता पंजीकरण' टैब से कृषक पंजीकृत करें — फॉर्म आईडी आवश्यक है।",
+              "bad",
+            );
+            return;
+          }
+          if (!validateRequiredBillFields()) return;
+          if (!validateDistrict()) return;
+          if (!validateDistinctDates()) return;
+          const hint = document.getElementById("saveAllHint");
+          let ok = 0;
+          for (const step of SAVE_STEPS) {
+            if (hint) hint.textContent = "सहेजा जा रहा है: " + step.label + "…";
+            setSaveState(step.key, "सहेजा जा रहा है…", "wait");
+            const done = await apiPut(step.build(), step.label, step.key, true);
+            if (done) ok++;
+            if (!done) break;
+          }
+          if (hint)
+            hint.textContent =
+              ok + " / " + SAVE_STEPS.length + " चरण सहेजे गए।";
+          if (ok === SAVE_STEPS.length)
+            apiMsg(
+              "✓ सम्पूर्ण प्रपत्र सफलतापूर्वक सहेजा गया — " +
+                FORM_ID +
+                " (" +
+                ok +
+                "/" +
+                SAVE_STEPS.length +
+                " चरण)",
+              "ok",
+            );
+          else
+            apiMsg(
+              "✗ " + ok + " / " + SAVE_STEPS.length + " चरण ही सहेजे जा सके।",
+              "bad",
+            );
+        }
+
+        /* GET: पंजीकृत फॉर्म सूची */
+        const GENDER_BACK = {
+          male: "पुरुष",
+          पुरुष: "पुरुष",
+          female: "महिला",
+          महिला: "महिला",
+        };
+        const CAT_BACK = {
+          general: "सामान्य",
+          सामान्य: "सामान्य",
+          obc: "OBC",
+          sc: "SC",
+          st: "ST",
+          female: "महिला",
+        };
+        const FARMER_BACK = {
+          "small farmer": "लघु",
+          small: "लघु",
+          लघु: "लघु",
+          marginal: "सीमांत",
+          "border farmer": "सीमांत",
+          सीमांत: "सीमांत",
+          other: "अन्य",
+          अन्य: "अन्य",
+        };
+        const MAT_BACK = {
+          "chain link": "चेनलिंक जाली",
+          chainlink: "चेनलिंक जाली",
+          "चेनलिंक जाली": "चेनलिंक जाली",
+          "barbed wire": "कंटीले तार (बार्बड वायर)",
+          barbedwire: "कंटीले तार (बार्बड वायर)",
+          "कंटीले तार": "कंटीले तार (बार्बड वायर)",
+          "कंटीले तार (बार्बड वायर)": "कंटीले तार (बार्बड वायर)",
+        };
+        function matchValue(map, v, fallback) {
+          if (v === null || v === undefined || v === "") return fallback;
+          const k = String(v).trim().toLowerCase();
+          if (map[k]) return map[k];
+          const hit = Object.keys(map).find(
+            (x) => x.length > 2 && k.indexOf(x) === 0,
+          );
+          return hit ? map[hit] : v;
+        }
+        function rowFilled(rec) {
+          const p = rec.personal_details || {},
+            e = rec.expense_details || {};
+          const has =
+            (p.garden_card && String(p.garden_card).trim()) ||
+            (p.father_name && String(p.father_name).trim()) ||
+            (p.bank_name && String(p.bank_name).trim()) ||
+            (e.area_hectare && num(e.area_hectare) > 0) ||
+            (e.material_expenses && e.material_expenses.length) ||
+            (e.footing_expenses && e.footing_expenses.length) ||
+            (e.labour_expenses && e.labour_expenses.length) ||
+            (e.other_expenses && e.other_expenses.length);
+          return has ? "भरा गया" : "पंजीकृत (रिक्त)";
+        }
+        function renderRegistrations() {
+          const tb = document.getElementById("regRows");
+          const cnt = document.getElementById("regCount");
+          if (!tb) return;
+          if (cnt)
+            cnt.textContent = REG_ROWS.length ? REG_ROWS.length + " फॉर्म" : "";
+          if (!REG_ROWS.length) {
+            tb.innerHTML =
+              '<tr><td colspan="12" class="empty">कोई फॉर्म नहीं मिला। ऊपर नया पंजीकरण करें।</td></tr>';
+            return;
+          }
+          tb.innerHTML = REG_ROWS.map((rec, i) => {
+            const p = rec.personal_details || rec,
+              e = rec.expense_details || {};
+            const fid = rec.form_id || p.form_id || "";
+            const hec = num(e.area_hectare);
+            const plants = num(p.plants_no);
+            const payable = num(e.payable_subsidy);
+            const filled = rowFilled(rec);
+            const active = fid && fid === FORM_ID;
+            return `<tr class="${active ? "sel" : ""}">
+              <td class="n">${i + 1}</td>
+              <td><b>${esc(fid || "—")}</b></td>
+              <td>${esc(p.full_name || "—")}</td>
+              <td>${esc(p.mob || "—")}</td>
+              <td>${esc(p.center_name || "—")}</td>
+              <td>${esc(p.scheme_name || "—")}</td>
+              <td>${esc(p.garden_card || "—")}</td>
+              <td style="text-align:right">${plants > 0 ? fmtN(plants).replace(/\.00$/, "") : "—"}</td>
+              <td style="text-align:right">${hec > 0 ? fmtN(hec).replace(/\.00$/, "") : "—"}</td>
+              <td style="text-align:right">${payable > 0 ? fmt0(payable) : "—"}</td>
+              <td><span class="pill ${filled === "भरा गया" ? "ok" : "wait"}">${filled}</span></td>
+              <td class="act">
+                <button type="button" class="mini ${active ? "on" : ""}" data-open="${esc(fid)}" title="इस फॉर्म के विवरण प्रपत्र में खोलें">प्रपत्र भरें</button>
+                <button type="button" class="mini danger" data-delform="${esc(fid)}" title="यह फॉर्म सर्वर से हटाएँ">हटाएँ</button>
+              </td>
+            </tr>`;
+          }).join("");
+        }
+        async function loadRegistrations() {
+          const tb = document.getElementById("regRows");
+          if (tb)
+            tb.innerHTML =
+              '<tr><td colspan="12" class="empty">लोड हो रहा है…</td></tr>';
+          const c = centerFilter();
+          const full = (AUTH_CENTER || "").trim();
+          const candidates = [];
+          if (c) candidates.push(c);
+          if (full && full !== c) candidates.push(full);
+          if (!candidates.length) candidates.push("");
+          let rows = [],
+            lastErr = null;
+          for (let i = 0; i < candidates.length; i++) {
+            const q = candidates[i];
+            const url =
+              API_FENCING + (q ? "?center_name=" + encodeURIComponent(q) : "");
+            try {
+              const res = await apiFetch(url);
+              const data = await readJsonResponse(res);
+              if (!res.ok)
+                throw new Error(
+                  (data && (data.detail || data.error)) ||
+                    "सूची प्राप्त नहीं (" + res.status + ")",
+                );
+              const list = Array.isArray(data)
+                ? data
+                : data && data.results
+                  ? data.results
+                  : [];
+              rows = list;
+              if (list.length) break;
+            } catch (err) {
+              lastErr = err;
+            }
+          }
+          if (!rows.length && lastErr) {
+            REG_ROWS = [];
+            renderRegistrations();
+            apiMsg(
+              "सूची लोड नहीं हो सकी: " +
+                (lastErr && lastErr.message
+                  ? lastErr.message
+                  : "अज्ञात त्रुटि"),
+              "bad",
+            );
+            return;
+          }
+          REG_ROWS = rows.map((r) =>
+            r && r.personal_details
+              ? r
+              : {
+                  form_id: r.form_id,
+                  personal_details: r,
+                  expense_details: r.expense_details || {},
+                },
+          );
+          renderRegistrations();
+        }
+        function findRecord(formId) {
+          return (
+            REG_ROWS.find(
+              (r) =>
+                (r.form_id || (r.personal_details || {}).form_id) === formId,
+            ) || null
+          );
+        }
+        function applyRecord(rec) {
+          if (!rec) return;
+          const p = rec.personal_details || rec;
+          const e = rec.expense_details || {};
+          S.f.planType = matchValue({}, p.scheme_name, S.f.planType);
+          S.f.gender = matchValue(GENDER_BACK, p.gender, S.f.gender);
+          S.f.fenceMaterial = matchValue(
+            MAT_BACK,
+            p.fencing_material,
+            S.f.fenceMaterial,
+          );
+          S.f.gardenCard = p.garden_card || "";
+          S.f.plants =
+            p.plants_no !== undefined && p.plants_no !== null
+              ? p.plants_no
+              : "";
+          S.f.name = p.full_name || "";
+          S.f.father = p.father_name || "";
+          S.f.village = p.village || "";
+          S.f.post = p.post || "";
+          S.f.block = p.block || "";
+          S.f.dist = p.dist || DISTRICT_NAME;
+          S.f.mob = p.mob || "";
+          S.f.aadhar = p.aadhar || "";
+          if (
+            p.category !== undefined &&
+            p.category !== null &&
+            String(p.category) !== ""
+          )
+            S.f.cat = matchValue(CAT_BACK, p.category, "सामान्य");
+          if (
+            p.farmer_category !== undefined &&
+            p.farmer_category !== null &&
+            String(p.farmer_category) !== ""
+          )
+            S.f.farmerCat = matchValue(
+              FARMER_BACK,
+              p.farmer_category,
+              "सीमांत",
+            );
+          S.f.bank = p.bank_name || "";
+          S.f.branch = p.branch || "";
+          S.f.acct = p.account || "";
+          S.f.ifsc = p.ifsc || "";
+          S.f.date = p.date || S.f.date;
+          S.f.place = p.place || S.f.place;
+
+          if (
+            p.subsidy_rate !== undefined &&
+            p.subsidy_rate !== null &&
+            String(p.subsidy_rate) !== ""
+          )
+            S.norm.fRate = String(num(p.subsidy_rate));
+          if (e.subsidy_rate !== undefined && num(e.subsidy_rate) > 0)
+            S.norm.fRate = String(num(e.subsidy_rate));
+          S.norm.fRate = num(S.norm.fRate) >= 60 ? "80" : "50";
+          const uc = num(e.unit_cost_per_hectare);
+          S.norm.fCostHa = uc > 0 ? String(uc) : "200000";
+          S.norm.fCap =
+            e.additional_max_limit !== undefined &&
+            e.additional_max_limit !== null &&
+            String(e.additional_max_limit) !== ""
+              ? String(num(e.additional_max_limit))
+              : "";
+          if (
+            e.measured_actual_length !== undefined &&
+            e.measured_actual_length !== null &&
+            String(e.measured_actual_length) !== ""
+          )
+            S.f.mbLen = String(num(e.measured_actual_length));
+          if (
+            e.site_verified_actual_length !== undefined &&
+            e.site_verified_actual_length !== null &&
+            String(e.site_verified_actual_length) !== ""
+          )
+            S.f.verifiedLen = String(num(e.site_verified_actual_length));
+          if (
+            e.permissible_length_override !== undefined &&
+            e.permissible_length_override !== null &&
+            String(e.permissible_length_override) !== ""
+          )
+            S.f.allowedLen = String(num(e.permissible_length_override));
+          if (
+            e.direct_mb_amount !== undefined &&
+            e.direct_mb_amount !== null &&
+            String(e.direct_mb_amount) !== ""
+          )
+            S.f.mbAmt = String(num(e.direct_mb_amount));
+          if (
+            e.payable_date !== undefined &&
+            e.payable_date !== null &&
+            String(e.payable_date) !== ""
+          )
+            S.f.billDate = String(e.payable_date);
+
+          if (Array.isArray(p.farmer_details) && p.farmer_details.length) {
+            S.landRows = p.farmer_details.map((row, i) => {
+              const arr = Array.isArray(row) ? row : [];
+              const hec =
+                num(arr[6]) || (num(arr[5]) > 0 ? num(arr[5]) / 50 : 0);
+              return {
+                relation:
+                  (S.landRows && S.landRows[i] && S.landRows[i].relation) ||
+                  (i === 0 ? "स्वयं" : "अन्य"),
+                name: arr[0] || "",
+                father: arr[1] || "",
+                village: arr[2] || "",
+                khasra: arr[3] || "",
+                aadhaar: arr[4] || "",
+                hec: hec > 0 ? String(hec) : "",
+              };
+            });
+            while (S.landRows.length < 5)
+              S.landRows.push({
+                relation: "अन्य",
+                name: "",
+                father: "",
+                khasra: "",
+                aadhaar: "",
+                hec: "",
+              });
+          } else {
+            S.landRows = blank().landRows;
+          }
+          const loadRows = (sec, arr, firstKey) => {
+            const list = Array.isArray(arr) ? arr : [];
+            if (!list.length) {
+              S[sec] = [{}];
+              return;
+            }
+            const ex = EXTRA[sec] || [];
+            S[sec] = list.map((row) => {
+              const a = Array.isArray(row)
+                ? row
+                : row && typeof row === "object"
+                  ? Object.values(row)
+                  : [];
+              const o = {};
+              o[firstKey] = a[0] || "";
+              o.qty = num(a[1]) || "";
+              o.unit = a[2] || "";
+              o.rate = num(a[3]) || "";
+              o.amt = num(a[4]) || "";
+              ex.forEach((key, i) => {
+                o[key] = a[5 + i] || "";
+              });
+              return o;
+            });
+          };
+          loadRows("material", e.material_expenses, "item");
+          loadRows("footing", e.footing_expenses, "item");
+          loadRows("labour", e.labour_expenses, "work");
+          loadRows("other", e.other_expenses, "item");
+        }
+        let fillLocked = false;
+        function resetFill() {
+          S = blank();
+          setFormId("");
+          clearSaveStates();
+          refresh();
+        }
+        function expenseRowsLoaded(rec) {
+          const e = (rec && (rec.expense_details || {})) || {};
+          return ["material", "footing", "labour", "other"].reduce((a, k) => {
+            const arr = e[k + "_expenses"];
+            return a + (Array.isArray(arr) ? arr.length : 0);
+          }, 0);
+        }
+        function openForm(formId) {
+          const rec = findRecord(formId);
+          if (!rec) {
+            S = blank();
+          }
+          setFormId(formId);
+          clearSaveStates();
+          if (rec) {
+            applyRecord(rec);
+          }
+          fillLocked = true;
+          showTab("filling");
+          show("application");
+          buildWork();
+          refresh();
+          renderRegistrations();
+          const n = expenseRowsLoaded(rec);
+          const e = (rec && rec.expense_details) || {};
+          const landSaved = num(e.area_hectare);
+          const landLocal = (S.landRows || []).reduce(
+            (a, r) => a + num(r.hec),
+            0,
+          );
+          if (!rec) {
+            apiMsg("फॉर्म " + formId + " चयनित — विवरण भरकर सहेजें।", "bad");
+            return;
+          }
+          if (landLocal > 0 && landSaved <= 0) {
+            apiMsg(
+              "फॉर्म " +
+                formId +
+                " खुला — भूमि " +
+                fmtN(landLocal) +
+                " हे० (सर्वर पर 0 है)। 'भूमि / सह-खातेदार विवरण' और 'क्षेत्रफल एवं मानक' दोबारा सहेजें।",
+              "bad",
+            );
+          } else if (n === 0) {
+            apiMsg(
+              "फॉर्म " +
+                formId +
+                " खोला गया — सर्वर पर अभी कोई व्यय पंक्ति सहेजी नहीं गई है।",
+              "bad",
+            );
+          } else {
+            apiMsg(
+              "फॉर्म " +
+                formId +
+                " खोला गया — सर्वर से " +
+                n +
+                " व्यय पंक्ति(याँ) तथा " +
+                fmtN(landSaved) +
+                " हे० भूमि लोड हुई।",
+              "ok",
+            );
+          }
+        }
+        async function registerUser(ev) {
+          ev && ev.preventDefault && ev.preventDefault();
+          const name = (document.getElementById("regName") || {}).value || "";
+          const mob = (document.getElementById("regMob") || {}).value || "";
+          const ctr = apiCenterName();
+          if (!ctr) {
+            apiMsg(
+              "लॉग इन केंद्र का नाम नहीं मिला — पहले दोबारा लॉगिन करें।",
+              "bad",
+            );
+            return;
+          }
+          if (!name.trim()) {
+            apiMsg("कृषक का नाम भरना अनिवार्य है।", "bad");
+            return;
+          }
+          if (!/^\d{10}$/.test(mob.trim())) {
+            apiMsg("10 अंक का सही मोबाइल नंबर भरें।", "bad");
+            return;
+          }
+          const btn = document.querySelector('#regForm button[type="submit"]');
+          if (btn) btn.disabled = true;
+          try {
+            const res = await apiFetch(API_FENCING, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                full_name: name.trim(),
+                mob: mob.trim(),
+                center_name: ctr.trim(),
+              }),
+            });
+            const data = await readJsonResponse(res);
+            if (!res.ok)
+              throw new Error(
+                (data && (data.detail || data.error || data.message)) ||
+                  "पंजीकरण विफल (" + res.status + ")",
+              );
+            const newId = pickFormId(data);
+            await loadRegistrations();
+            if (newId) {
+              setFormId(newId);
+              S.f.name = name.trim();
+              S.f.mob = mob.trim();
+              S.f.gardenCard = "";
+              S.f.plants = "";
+              S.landRows = blank().landRows;
+              S.landRows[0].name = name.trim();
+
+              const rec = findRecord(newId);
+              if (rec) applyRecord(rec);
+              renderRegistrations();
+              apiMsg(
+                "पंजीकरण हो गया — फॉर्म आईडी " +
+                  newId +
+                  "। अब 'प्रपत्र भरना' टैब में विवरण भरें।",
+                "ok",
+              );
+              fillLocked = true;
+              showTab("filling");
+            } else {
+              apiMsg(
+                "पंजीकरण हो गया, पर फॉर्म आईडी नहीं मिली। सूची ताज़ा करें।",
+                "bad",
+              );
+            }
+          } catch (err) {
+            apiMsg(
+              "पंजीकरण विफल: " +
+                (err && err.message ? err.message : "अज्ञात त्रुटि"),
+              "bad",
+            );
+          } finally {
+            if (btn) btn.disabled = false;
+          }
+        }
+
+        let cur = "application";
+        let topCur = "register";
+        function show(v) {
+          cur = v;
+          document
+            .querySelectorAll("#subnav a")
+            .forEach((a) => a.classList.toggle("on", a.dataset.go === v));
+          const host = document.querySelector('.view[data-v="filling"]');
+          if (host) {
+            host.querySelectorAll(":scope > .view").forEach((s) => {
+              s.classList.toggle("on", s.dataset.v === v);
+              s.classList.remove("print-target");
+            });
+          }
+          if (v === "application") {
+            buildApplication();
+          } else if (v === "work") {
+            buildWork();
+            refresh();
+          } else if (v === "bill") {
+            buildBill();
+          }
+          window.scrollTo(0, 0);
+        }
+        function showTab(v) {
+          topCur = v;
+          document
+            .querySelectorAll("main > .view")
+            .forEach((s) => s.classList.toggle("on", s.dataset.v === v));
+          document
+            .querySelectorAll("#nav a")
+            .forEach((a) => a.classList.toggle("on", a.dataset.tab === v));
+          if (v === "filling") {
+            if (fillLocked) {
+              fillLocked = false;
+            } else {
+              resetFill();
+            }
+            show(cur);
+          }
+          if (v === "register") {
+            loadRegistrations();
+          }
+          const strip = document.querySelector(".strip");
+          if (strip) strip.style.display = v === "filling" ? "" : "none";
+          const pv = document.getElementById("bPreview");
+          if (pv) pv.disabled = v !== "filling";
+          window.scrollTo(0, 0);
+        }
+
+        function validateFenceAreaValue(i) {
+          return true;
+        }
+
+        function syncSelfRowFields() {
+          const row = (S.landRows || [])[0];
+          if (!row) return;
+          row.name = S.f.name || "";
+          row.father = S.f.father || "";
+          row.village = S.f.village || "";
+          row.aadhaar = S.f.aadhar || "";
+        }
+
+        function setFenceMappingPrintRow() {
+          const d = applicationData();
+          const table = document.getElementById("fenceMappingApplicationTable");
+          if (!table) return;
+          table
+            .querySelectorAll("tbody tr")
+            .forEach((tr) => tr.classList.remove("print-selected"));
+          if (!d.allowedArea || !d.exact) return;
+          const row = table.querySelector(
+            `tbody tr[data-map-hec="${d.exact.hec.toFixed(2)}"]`,
+          );
+          if (row) row.classList.add("print-selected");
+        }
+
+        const onDocInput = (e) => {
+          const t = e.target;
+          if (t.dataset.land) {
+            const i = +t.dataset.land,
+              k = t.dataset.k;
+            if (!S.landRows)
+              S.landRows = [
+                {
+                  relation: "स्वयं",
+                  name: "",
+                  father: "",
+                  khasra: "",
+                  aadhaar: "",
+                  hec: "",
+                },
+                {
+                  relation: "भाई",
+                  name: "",
+                  father: "",
+                  khasra: "",
+                  aadhaar: "",
+                  hec: "",
+                },
+                {
+                  relation: "पुत्र",
+                  name: "",
+                  father: "",
+                  khasra: "",
+                  aadhaar: "",
+                  hec: "",
+                },
+                {
+                  relation: "पिता",
+                  name: "",
+                  father: "",
+                  khasra: "",
+                  aadhaar: "",
+                  hec: "",
+                },
+                {
+                  relation: "अन्य",
+                  name: "",
+                  father: "",
+                  khasra: "",
+                  aadhaar: "",
+                  hec: "",
+                },
+              ];
+            if (!S.landRows[i])
+              S.landRows[i] = { relation: "", hec: "", aadhaar: "" };
+            if (
+              [
+                "relation",
+                "hec",
+                "name",
+                "father",
+                "village",
+                "khasra",
+                "aadhaar",
+              ].includes(k)
+            )
+              S.landRows[i][k] = t.value;
+            const validArea = k === "hec" ? validateFenceAreaValue(i) : true;
+            updateApplicationDerived();
+            return;
+          }
+          if (t.dataset.f) {
+            S.f[t.dataset.f] = t.value;
+            refresh();
+            if (LANG_FIELDS.includes(t.dataset.f)) {
+              rebuildDocs();
+            } else {
+              if (cur === "application") updateApplicationDerived();
+            }
+          } else if (t.dataset.norm) {
+            S.norm[t.dataset.norm] = t.value;
+            refresh();
+            if (cur === "application") buildApplication();
+          } else if (t.dataset.row) {
+            const k = t.dataset.row,
+              i = +t.dataset.i;
+            if (!S[k][i]) S[k][i] = {};
+            S[k][i][t.dataset.k] = t.value;
+            refreshWorkTotals();
+          }
+        };
+        const onDocChange = (e) => {
+          const t = e.target;
+          if (t.dataset.f) {
+            S.f[t.dataset.f] = t.value;
+            refresh();
+            if (LANG_FIELDS.includes(t.dataset.f)) {
+              rebuildDocs();
+            } else {
+              if (cur === "application") updateApplicationDerived();
+            }
+          }
+          if (t.id === "appRate") {
+            S.norm.fRate = t.value;
+            refresh();
+            if (cur === "application") updateApplicationDerived();
+            return;
+          }
+          if (t.dataset.land) {
+            const i = +t.dataset.land,
+              k = t.dataset.k;
+            if (!S.landRows) S.landRows = [];
+            if (!S.landRows[i])
+              S.landRows[i] = { relation: "", hec: "", aadhaar: "" };
+            S.landRows[i][k] = t.value;
+            if (k === "hec") validateFenceAreaValue(i);
+            if (cur === "application") {
+              buildApplication();
+            }
+            return;
+          }
+          if (t.id === "scheme") {
+            S.scheme = t.value;
+            buildApplication();
+            show("work");
+            return;
+          }
+          const id = t.getAttribute && t.getAttribute("list");
+          if (
+            id &&
+            DL[id] &&
+            t.value.trim() &&
+            !S.lists[DL[id]].includes(t.value.trim())
+          ) {
+            S.lists[DL[id]].push(t.value.trim());
+            buildLists();
+          }
+        };
+        const onDocClick = (e) => {
+          const b = e.target.closest(
+            "[data-add],[data-del],[data-go],[data-tab],[data-save],[data-open],[data-delform],[data-land-del],#addLandRow",
+          );
+          if (!b) return;
+          if (b.id === "addLandRow") {
+            if (!S.landRows) S.landRows = [];
+            S.landRows.push({
+              relation: "अन्य",
+              name: "",
+              father: "",
+              khasra: "",
+              aadhaar: "",
+              hec: "",
+            });
+            buildApplication();
+            return;
+          }
+          if (b.dataset.landDel !== undefined) {
+            const i = +b.dataset.landDel;
+            if (i > 0 && S.landRows && i < S.landRows.length) {
+              S.landRows.splice(i, 1);
+              buildApplication();
+            }
+            return;
+          }
+          if (b.dataset.open !== undefined) {
+            openForm(b.dataset.open);
+            return;
+          }
+          if (b.dataset.delform !== undefined) {
+            requestDeleteForm(b.dataset.delform, b);
+            return;
+          }
+          if (b.dataset.save !== undefined) {
+            saveStep(b.dataset.save);
+            return;
+          }
+          if (b.dataset.tab) {
+            showTab(b.dataset.tab);
+            return;
+          }
+          if (b.dataset.add) {
+            S[b.dataset.add].push({});
+            buildWork();
+            refresh();
+          } else if (b.dataset.del) {
+            const k = b.dataset.del;
+            S[k].splice(+b.dataset.i, 1);
+            if (!S[k].length) S[k].push({});
+            buildWork();
+            refresh();
+          } else if (b.dataset.go) {
+            show(b.dataset.go);
+          }
+        };
+        document.addEventListener("input", onDocInput);
+        document.addEventListener("change", onDocChange);
+        document.addEventListener("click", onDocClick);
+        const regFormEl = document.getElementById("regForm");
+        if (regFormEl) regFormEl.addEventListener("submit", registerUser);
+        const regRefreshEl = document.getElementById("regRefresh");
+        if (regRefreshEl) regRefreshEl.onclick = () => loadRegistrations();
+        const btnSaveAllEl = document.getElementById("btnSaveAll");
+        if (btnSaveAllEl) btnSaveAllEl.onclick = () => saveAllSteps();
+        function printCurrent() {
+          const root = rootRef.current;
+          if (!root) return;
+          root
+            .querySelectorAll(".view")
+            .forEach((v) =>
+              v.classList.remove("print-target", "has-print-target"),
+            );
+          const host = root.querySelector('.view[data-v="filling"]');
+          const target =
+            (host ? host.querySelector('.view[data-v="' + cur + '"]') : null) ||
+            root.querySelector('.view[data-v="' + cur + '"]');
+          if (!target) return;
+          target.classList.add("print-target");
+          let p = target.parentElement;
+          while (p && p !== root) {
+            if (p.classList && p.classList.contains("view"))
+              p.classList.add("has-print-target");
+            p = p.parentElement;
+          }
+          window.print();
+        }
+        const PV_TITLES = {
+          application: "फेंसिंग आवेदन पत्र",
+          work: "व्यय विवरण",
+          bill: "देयक प्रपत्र",
+        };
+        function openPreview() {
+          // Recalculate from the latest form values before building the preview.
+          // Blank/default form data must not show stale or preset monetary values.
+          refresh();
+          if (topCur !== "filling") {
+            apiMsg("पहले 'प्रपत्र भरना' टैब खोलें।", "bad");
+            return;
+          }
+          const overlay = document.getElementById("pvOverlay");
+          const body = document.getElementById("pvBody");
+          const host = document.querySelector('.view[data-v="filling"]');
+          const target =
+            (host ? host.querySelector('.view[data-v="' + cur + '"]') : null) ||
+            document.querySelector('.view[data-v="' + cur + '"]');
+          if (!overlay || !body || !target) return;
+          document.getElementById("pvTitle").textContent =
+            "प्रिंट पूर्वावलोकन — " + (PV_TITLES[cur] || "प्रपत्र");
+          body.innerHTML = "";
+          if (cur === "application") setFenceMappingPrintRow();
+          const sheet = document.createElement("div");
+          sheet.className = "pv-sheet pv-" + cur;
+          const clone = target.cloneNode(true);
+          clone.classList.add("on");
+          const liveFields = target.querySelectorAll("input,select,textarea");
+          const cloneFields = clone.querySelectorAll("input,select,textarea");
+          for (let i = 0; i < liveFields.length; i++) {
+            const cf = cloneFields[i];
+            if (!cf) break;
+            if (cf.type === "checkbox" || cf.type === "radio")
+              cf.checked = liveFields[i].checked;
+            else cf.value = liveFields[i].value;
+          }
+          sheet.appendChild(clone);
+          body.appendChild(sheet);
+          overlay.hidden = false;
+          overlay.scrollTop = 0;
+        }
+        function closePreview() {
+          const overlay = document.getElementById("pvOverlay");
+          if (!overlay) return;
+          overlay.hidden = true;
+          const body = document.getElementById("pvBody");
+          if (body) body.innerHTML = "";
+        }
+        const bPreviewEl = document.getElementById("bPreview");
+        if (bPreviewEl) bPreviewEl.onclick = openPreview;
+        const pvCloseEl = document.getElementById("pvClose");
+        if (pvCloseEl) pvCloseEl.onclick = closePreview;
+        const pvPrintEl = document.getElementById("pvPrint");
+        if (pvPrintEl)
+          pvPrintEl.onclick = () => {
+            closePreview();
+            printCurrent();
+          };
+        const pvOverlayEl = document.getElementById("pvOverlay");
+        if (pvOverlayEl)
+          pvOverlayEl.addEventListener("click", (e) => {
+            if (e.target === e.currentTarget) closePreview();
+          });
+        const onDocKeydown = (e) => {
+          if (e.key === "Escape") closePreview();
+        };
+        document.addEventListener("keydown", onDocKeydown);
+
+        const schemeEl = document.getElementById("scheme");
+        if (schemeEl) schemeEl.value = S.scheme;
+        setFormId("");
+        AUTH_CENTER = authCenter;
+        showTab("register");
+        loadRegistrations();
+        loadFenceStandards();
+        function clearPrintTarget() {
+          const r = rootRef.current;
+          if (r)
+            r.querySelectorAll(".print-target, .has-print-target").forEach(
+              (v) => v.classList.remove("print-target", "has-print-target"),
+            );
+        }
+        const onBeforePrint = () => {
+          closePreview();
+          setFenceMappingPrintRow();
+        };
+        const onAfterPrint = () => {
+          document
+            .querySelectorAll("#fenceMappingApplicationTable tbody tr")
+            .forEach((tr) => tr.classList.remove("print-selected"));
+          clearPrintTarget();
+        };
+        window.addEventListener("beforeprint", onBeforePrint);
+        window.addEventListener("afterprint", onAfterPrint);
+        docListeners.current = () => {
+          document.removeEventListener("input", onDocInput);
+          document.removeEventListener("change", onDocChange);
+          document.removeEventListener("click", onDocClick);
+          document.removeEventListener("keydown", onDocKeydown);
+          window.removeEventListener("beforeprint", onBeforePrint);
+          window.removeEventListener("afterprint", onAfterPrint);
+        };
+      })();
     } catch (error) {
       console.error("Kisan Aavedan Portal initialization failed:", error);
       const target = root.querySelector("main") || root;
@@ -30,9 +3190,34 @@ export default function KisanAavedanPortal() {
     }
 
     return () => {
+      window.removeEventListener("resize", syncAppNav);
+      window.removeEventListener("load", syncAppNav);
+      window.clearTimeout(navSyncTimer);
+      if (docListeners.current) {
+        docListeners.current();
+        docListeners.current = null;
+      }
       root.innerHTML = "";
     };
   }, []);
+
+  const centerSyncRef = useRef(false);
+  useEffect(() => {
+    const el = rootRef.current && rootRef.current.querySelector("#regCenter");
+    if (!el) return;
+    const value = (centerName || "").trim();
+    centerStore.value = value;
+    const appCenter = document.getElementById("appOfficerCenter");
+    if (appCenter) appCenter.textContent = value || "……………………";
+    el.value = value || "— लॉग इन केंद्र नहीं मिला —";
+    el.title = value ? "लॉग इन केंद्र: " + value : "लॉग इन केंद्र नहीं मिला";
+    if (!centerSyncRef.current) {
+      centerSyncRef.current = true;
+      return;
+    }
+    const btn = document.getElementById("regRefresh");
+    if (btn) btn.click();
+  }, [centerName]);
 
   return <div ref={rootRef} className="kisan-html-react-root" />;
 }

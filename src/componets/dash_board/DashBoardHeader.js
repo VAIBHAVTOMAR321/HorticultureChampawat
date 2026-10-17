@@ -51,15 +51,13 @@ function DashBoardHeader() {
             <Nav.Link as={NavLink} to="/AdminMonthAttendance">
               मासिक उपस्थिति
             </Nav.Link>
-
-          
- <Nav.Link as={NavLink} to="/MainDashboard">
-              डैशबोर्ड
-            </Nav.Link>
-           
-
             <Nav.Link as={NavLink} to="/AdminKishanAavedan">
-           किसान आवेदन
+            किसान आवेदन
+            </Nav.Link>
+
+
+            <Nav.Link as={NavLink} to="/MainDashboard">
+              डैशबोर्ड
             </Nav.Link>
 
             <NavDropdown 
@@ -75,7 +73,14 @@ function DashBoardHeader() {
               <NavDropdown.Item as={Link} to="/KishanBeej">किसान बीज</NavDropdown.Item>
             </NavDropdown>
 
-            
+            <NavDropdown 
+              title="बिल" 
+              id="bill-nav-dropdown" 
+              active={billRoutes.includes(location.pathname)}
+            >
+              <NavDropdown.Item as={Link} to="/Billing">Billing</NavDropdown.Item>
+              <NavDropdown.Item as={Link} to="/AllBills">AllBills</NavDropdown.Item>
+            </NavDropdown>
 
             <NavDropdown 
               title="डिमांड" 

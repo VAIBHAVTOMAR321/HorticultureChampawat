@@ -38,7 +38,7 @@ const UPDATE_REPORT_STATUS_URL =
   "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/update-billing-item/";
 const UPDATE_BILLING_REPORT_URL =
   "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/billing-report/update/";
-const BASE_URL = "https://horticulturechampawat.in/govbillingsystem/backend";
+const BASE_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend";
 
 // Custom styles for react-select components
 const customSelectStyles = {

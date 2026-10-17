@@ -14,7 +14,7 @@ function NavBar() {
   //   const fetchJobOpenings = async () => {
   //     try {
   //       const res = await axios.get(
-  //         "https://horticulturechampawat.in/brainrock.in/brainrock/backendbr/api/job-opening/"
+  //         "https://mahadevaaya.com/brainrock.in/brainrock/backendbr/api/job-opening/"
   //       );
 
   //       if (Array.isArray(res.data) && res.data.length > 0) {
@@ -58,7 +58,7 @@ function NavBar() {
                 उत्तराखण्ड
               </span>
               <span className="br-span">
-                कार्यालय-उद्यान विशेषज्ञ Champawat गढ़वाल
+                कार्यालय-उद्यान विशेषज्ञ कोटद्वार गढ़वाल
               </span>
             </div>
           </div>

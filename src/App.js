@@ -46,7 +46,12 @@ import CenterUdyanBill from "./componets/udhyan/CenterUdyanBill";
 import VetanMang from "./componets/VetanMang";
 import AdminVetanMang from "./componets/dash_board/AdminVetanMang";
 import AdminMonthAttendance from "./componets/dash_board/AdminMonthAttendance";
-import AdminKishanAavedan from "./componets/kishanavedan/AdminKishanAavedan";
+import AdminKishanAavedan from "./componets/KishanBeej/AdminKishanAavedan";
+import KisanAvedan from "./componets/kishanavedan/KisanAvedan";
+import KisanAavedan from "./componets/kishanavedan/KisanAvedan";
+import DragfruitsAndKiwi from "./componets/kishanavedan/DragfruitsAndKiwi";
+import KiwiFruits from "./componets/kishanavedan/KiwiFruits";
+import VirtanKishanBeej from "./componets/virtranbeej/VirtanKishanBeej";
 
 // Navbar wrapper component that uses useAuth (must be inside AuthProvider)
 function NavbarWrapper() {
@@ -59,7 +64,8 @@ function NavbarWrapper() {
     "/LibrarySystem",
     "/MonthReport",
     "/AdminVetanMang",
-    "/AdminKishanAavedan"
+    "/AdminKishanAavedan",
+    "/VirtanKishanBeej"
   ]);
   const hiddenPaths = new Set([
     "/Dashboard",
@@ -86,7 +92,11 @@ function NavbarWrapper() {
     "/CenterUdyanBill",
     "/VetanMang",
     "/MonthAttendance",
-    "/AdminKishanAavedan"
+    "/AdminKishanAavedan",
+    "/KisanAvedan",
+    "/DragfruitsAndKiwi",
+    "/KiwiFruits",
+  
     
   ]);
 
@@ -125,6 +135,7 @@ function AppContent() {
           {/* Public Route */}
           <Route path="/" element={<Home />} />
           <Route path="/ForgotPassword" element={<ForgotPassword />} />
+      
 
           {/* PROTECTED ROUTES */}
           <Route
@@ -135,6 +146,8 @@ function AppContent() {
               </ProtectedRoute>
             }
           />
+
+        
           
   <Route
             path="/MonthReport"
@@ -152,6 +165,30 @@ function AppContent() {
       </ProtectedRoute>
     }
   />
+   <Route
+    path="/DragfruitsAndKiwi"
+    element={
+      <ProtectedRoute allowedLoginTypes={["demand"]}>
+        <DragfruitsAndKiwi />
+      </ProtectedRoute>
+    }
+  />
+   <Route
+    path="/KiwiFruits"
+    element={
+      <ProtectedRoute allowedLoginTypes={["demand"]}>
+        <KiwiFruits />
+      </ProtectedRoute>
+    }
+  />
+  <Route
+    path="/KisanAvedan"
+    element={
+      <ProtectedRoute allowedLoginTypes={["demand"]}>
+        <KisanAavedan />
+      </ProtectedRoute>
+    }
+  />
   <Route
     path="/AdminVetanMang"
     element={
@@ -160,17 +197,6 @@ function AppContent() {
       </ProtectedRoute>
     }
   />
-  <Route
-    path="/AdminKishanAavedan"
-    element={
-      <ProtectedRoute allowedLoginTypes={["admin"]}>
-        <AdminKishanAavedan />
-      </ProtectedRoute>
-    }
-  />
-  
-
-
   <Route
     path="/AdminMonthAttendance"
     element={
@@ -184,6 +210,14 @@ function AppContent() {
             element={
               <ProtectedRoute allowedLoginTypes={["admin"]}>
                 <Registration />
+              </ProtectedRoute>
+            }
+          />
+            <Route
+            path="/AdminKishanAavedan"
+            element={
+              <ProtectedRoute allowedLoginTypes={["admin"]}>
+                <AdminKishanAavedan />
               </ProtectedRoute>
             }
           />
@@ -321,6 +355,14 @@ function AppContent() {
             element={
               <ProtectedRoute allowedLoginTypes={["demand"]}>
                 <DemandKrishiwiseEntry />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/VirtanKishanBeej"
+            element={
+              <ProtectedRoute allowedLoginTypes={["demand"]}>
+                <VirtanKishanBeej />
               </ProtectedRoute>
             }
           />

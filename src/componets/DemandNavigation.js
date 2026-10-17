@@ -90,12 +90,21 @@ const DemandNavigation = () => {
                 fontWeight:
                   isActive("/CenterUdyanBill") ||
                   isActive("/GetViewLibrary") ||
-                  isActive("/KisanAavedanPortal") ||
-                  isActive("/MonthAttendance")
+                  isActive("/MonthAttendance") ||
+                  isActive("/VetanMang")
                     ? "bold"
                     : "normal",
               }}
             >
+               <NavDropdown.Item
+                active={isActive("/GetViewLibrary")}
+                onClick={() => navigate("/VirtanKishanBeej")}
+                style={{
+                  fontWeight: isActive("/VirtanKishanBeej") ? "bold" : "normal",
+                }}
+              >
+                वितरन किसान बीज
+              </NavDropdown.Item>
               <NavDropdown.Item
                 active={isActive("/CenterUdyanBill")}
                 onClick={() => navigate("/CenterUdyanBill")}
@@ -114,24 +123,7 @@ const DemandNavigation = () => {
               >
                 लाइब्रेरी
               </NavDropdown.Item>
-              <NavDropdown.Item
-                active={isActive("/KisanAavedanPortal")}
-                onClick={() => navigate("/KisanAavedanPortal")}
-                style={{
-                  fontWeight: isActive("/KisanAavedanPortal") ? "bold" : "normal",
-                }}
-              >
-                किसान आवेदन पोर्टल
-              </NavDropdown.Item>
-              <NavDropdown.Item
-                active={isActive("/MonthAttendance")}
-                onClick={() => navigate("/MonthAttendance")}
-                style={{
-                  fontWeight: isActive("/MonthAttendance") ? "bold" : "normal",
-                }}
-              >
-                मासिक उपस्थिति
-              </NavDropdown.Item>
+            
               <NavDropdown.Item
                 active={isActive("/VetanMang")}
                 onClick={() => navigate("/VetanMang")}
@@ -140,6 +132,56 @@ const DemandNavigation = () => {
                 }}
               >
                 वेतन मांग पत्र
+              </NavDropdown.Item>
+            </NavDropdown>
+
+            {/* New Dropdown: किसान आवेदन (KisanAvedan) */}
+            <NavDropdown
+              title="किसान आवेदन"
+              id="kisanavedan-nav-dropdown"
+              style={{
+                fontWeight:
+                  isActive("/KisanAvedan") ||
+                  isActive("/KisanAavedanPortal")
+                    ? "bold"
+                    : "normal",
+              }}
+            >
+              <NavDropdown.Item
+                active={isActive("/KisanAvedan")}
+                onClick={() => navigate("/KisanAvedan")}
+                style={{
+                  fontWeight: isActive("/KisanAvedan") ? "bold" : "normal",
+                }}
+              >
+                वर्मी (Vermi)
+              </NavDropdown.Item>
+              <NavDropdown.Item
+                active={isActive("/KisanAavedanPortal")}
+                onClick={() => navigate("/KisanAavedanPortal")}
+                style={{
+                  fontWeight: isActive("/KisanAavedanPortal") ? "bold" : "normal",
+                }}
+              >
+                फेंसिंग (Fencing)
+              </NavDropdown.Item>
+                <NavDropdown.Item
+                active={isActive("/DragfruitsAndKiwi")}
+                onClick={() => navigate("/DragfruitsAndKiwi")}
+                style={{
+                  fontWeight: isActive("/DragfruitsAndKiwi") ? "bold" : "normal",
+                }}
+              >
+              ड्रैगन फ्रूट (Dragonfruit)
+              </NavDropdown.Item>
+                <NavDropdown.Item
+                active={isActive("/KiwiFruits")}
+                onClick={() => navigate("/KiwiFruits")}
+                style={{
+                  fontWeight: isActive("/KiwiFruits") ? "bold" : "normal",
+                }}
+              >
+               कीवी (Kiwi)
               </NavDropdown.Item>
             </NavDropdown>
           </Nav>
