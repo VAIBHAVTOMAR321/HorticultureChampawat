@@ -9,7 +9,7 @@ const API = {
     "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/kishan-beej-avantan/",
   vitran:
     "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/kishan-beej-vitaran/",
-  centres: "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/centers-dho/",
+  centres: "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/centers-Champawat/",
 };
 
 const tabs = [

@@ -87,7 +87,7 @@ const DemandGenerate = () => {
 
     if (value > maxQty) {
       setValidationError(
-        `मांगी गई मात्रा (${value}) DHO, कोटद्वार का कुल लक्ष्य (${maxQty}) से अधिक नहीं हो सकती`
+        `मांगी गई मात्रा (${value}) Champawat, कोटद्वार का कुल लक्ष्य (${maxQty}) से अधिक नहीं हो सकती`
       );
       return;
     }
@@ -103,7 +103,7 @@ const DemandGenerate = () => {
     }
     if (parseFloat(editingQuantity) > parseFloat(allocatedQuantity)) {
       setValidationError(
-        `मांगी गई मात्रा DHO, कोटद्वार का कुल लक्ष्य (${allocatedQuantity}) से कम होनी चाहिए`
+        `मांगी गई मात्रा Champawat, कोटद्वार का कुल लक्ष्य (${allocatedQuantity}) से कम होनी चाहिए`
       );
       return;
     }
@@ -151,7 +151,7 @@ const DemandGenerate = () => {
     }
     if (parseFloat(editingQuantity) > parseFloat(allocatedQuantity)) {
       setValidationError(
-        `मांगी गई मात्रा DHO, कोटद्वार का कुल लक्ष्य (${allocatedQuantity}) से कम होनी चाहिए`
+        `मांगी गई मात्रा Champawat, कोटद्वार का कुल लक्ष्य (${allocatedQuantity}) से कम होनी चाहिए`
       );
       return;
     }

@@ -4208,7 +4208,7 @@ const Dashboard = () => {
 
         if (action === 'share') {
           const pdfUrl = URL.createObjectURL(pdfBlob);
-          const fileName = `DHO_रिपोर्ट_${currentDate.replace(/\//g, '-')}.pdf`;
+          const fileName = `Champawat_रिपोर्ट_${currentDate.replace(/\//g, '-')}.pdf`;
 
           // Replace an older share URL safely.
           setShareFileUrl(prevUrl => {
@@ -4279,7 +4279,7 @@ const Dashboard = () => {
         const wb = XLSX.utils.book_new();
 
         const summaryData = [
-          ['DHO कोटद्वार बिलिंग रिपोर्ट'],
+          ['Champawat कोटद्वार बिलिंग रिपोर्ट'],
           [`रिपोर्ट तिथि: ${currentDate}`],
           [`फ़िल्टर: ${getFilterStatusText()}`],
           [],
@@ -4575,7 +4575,7 @@ const Dashboard = () => {
         if (!wb.SheetNames.length) {
           XLSX.utils.book_append_sheet(
             wb,
-            XLSX.utils.aoa_to_sheet([['DHO कोटद्वार बिलिंग रिपोर्ट'], ['कोई अतिरिक्त तालिका चयनित नहीं है।']]),
+            XLSX.utils.aoa_to_sheet([['Champawat कोटद्वार बिलिंग रिपोर्ट'], ['कोई अतिरिक्त तालिका चयनित नहीं है।']]),
             'रिपोर्ट'
           );
         }
@@ -4593,7 +4593,7 @@ const Dashboard = () => {
           { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }
         );
 
-        const fileName = `DHO_रिपोर्ट_${currentDate.replace(/\//g, '-')}.xlsx`;
+        const fileName = `Champawat_रिपोर्ट_${currentDate.replace(/\//g, '-')}.xlsx`;
         const url = URL.createObjectURL(excelBlob);
 
         setShareFileUrl(url);
@@ -4614,7 +4614,7 @@ const Dashboard = () => {
     }
 
     const reportInfo =
-      `DHO कोटद्वार बिलिंग रिपोर्ट\n` +
+      `Champawat कोटद्वार बिलिंग रिपोर्ट\n` +
       `रिपोर्ट: ${shareFileName}\n` +
       `तिथि: ${new Date().toLocaleDateString('hi-IN')}\n` +
       `फ़िल्टर: ${getFilterStatusText()}`;
@@ -4639,7 +4639,7 @@ const Dashboard = () => {
 
       if (platform === 'email') {
         const url =
-          `mailto:?subject=${encodeURIComponent('DHO कोटद्वार बिलिंग रिपोर्ट')}` +
+          `mailto:?subject=${encodeURIComponent('Champawat कोटद्वार बिलिंग रिपोर्ट')}` +
           `&body=${encodeURIComponent(
             reportInfo + '\n\nफाइल डाउनलोड करके ईमेल में अटैच करें।'
           )}`;
@@ -4695,7 +4695,7 @@ const Dashboard = () => {
 
       if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
-          title: 'DHO कोटद्वार बिलिंग रिपोर्ट',
+          title: 'Champawat कोटद्वार बिलिंग रिपोर्ट',
           text: `रिपोर्ट शेयर की जा रही है: ${shareFileName}`,
           files: [file]
         });
@@ -4769,7 +4769,7 @@ const Dashboard = () => {
     
     // Summary Sheet
     const summaryData = [
-      ['DHO कोटद्वार बिलिंग रिपोर्ट'],
+      ['Champawat कोटद्वार बिलिंग रिपोर्ट'],
       [`रिपोर्ट तिथि: ${currentDate}`],
       [`फ़िल्टर: ${getFilterStatusText()}`],
       [],
@@ -4956,14 +4956,14 @@ const Dashboard = () => {
     if (action === 'download') {
       // XLSX.writeFile handles browser downloads directly.
       // Keep the workbook binary generation out of this path.
-      XLSX.writeFile(wb, `DHO_रिपोर्ट_${currentDate.replace(/\//g, '-')}.xlsx`);
+      XLSX.writeFile(wb, `Champawat_रिपोर्ट_${currentDate.replace(/\//g, '-')}.xlsx`);
     } else {
       // For view, display preview modal with sheet data
       const sheetData = {};
       wb.SheetNames.forEach(sheetName => {
         sheetData[sheetName] = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { header: 1 });
       });
-      setExcelPreviewData({ sheets: sheetData, filename: `DHO_रिपोर्ट_${currentDate.replace(/\//g, '-')}.xlsx` });
+      setExcelPreviewData({ sheets: sheetData, filename: `Champawat_रिपोर्ट_${currentDate.replace(/\//g, '-')}.xlsx` });
       setShowExcelPreview(true);
     }
   };

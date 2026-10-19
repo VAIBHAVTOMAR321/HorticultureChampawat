@@ -34,7 +34,7 @@ const MEDIA_BASE_URL = "https://horticulturechampawat.in/champawathorticulture/c
 // Kendra / center-links APIs
 const CENTER_LINKS_API_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/center-links";
 const CENTERS_API_URL = "https://horticulturechampawat.in/champawathorticulture/champawathorticulture_backend/api/centres";
-const CENTER_LIBRARY_SHARE_URL = "https://dhokotdwar.in/LibrarySystem";
+const CENTER_LIBRARY_SHARE_URL = "https://Champawatkotdwar.in/LibrarySystem";
 
 const LibrarySystem = () => {
   // =====================================================

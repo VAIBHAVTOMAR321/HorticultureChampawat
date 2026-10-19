@@ -274,7 +274,7 @@ function MonthAttendance() {
             <div className="demand-center-header">
               <div>
                 <h4>मासिक उपस्थिति रिपोर्ट (Month Attendance)</h4>
-                <small className="text-muted">{centerName || "DHO कोटद्वार उद्यान विभाग"}</small>
+                <small className="text-muted">{centerName || "Champawat कोटद्वार उद्यान विभाग"}</small>
               </div>
               <Button variant="primary" size="sm" onClick={openAddModal}>
                 <FaPlus className="me-1" /> नई रिपोर्ट जोड़ें
