@@ -87,7 +87,7 @@ const DemandGenerate = () => {
 
     if (value > maxQty) {
       setValidationError(
-        `मांगी गई मात्रा (${value}) Champawat, कोटद्वार का कुल लक्ष्य (${maxQty}) से अधिक नहीं हो सकती`
+        `मांगी गई मात्रा (${value}) Champawat, का कुल लक्ष्य (${maxQty}) से अधिक नहीं हो सकती`
       );
       return;
     }
